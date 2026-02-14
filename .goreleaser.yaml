@@ -19,6 +19,7 @@ brews:
   - repository:
       owner: zulerne
       name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: https://github.com/zulerne/ccost
     description: Fast CLI to analyze Claude Code token usage and costs
     license: MIT
