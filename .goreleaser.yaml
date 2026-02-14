@@ -1,0 +1,32 @@
+version: 2
+
+builds:
+  - main: ./cmd/ccost
+    binary: ccost
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - format: tar.gz
+
+brews:
+  - repository:
+      owner: zulerne
+      name: homebrew-tap
+    homepage: https://github.com/zulerne/ccost
+    description: Fast CLI to analyze Claude Code token usage and costs
+    license: MIT
+    install: |
+      bin.install "ccost"
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
