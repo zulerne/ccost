@@ -35,24 +35,24 @@ make build
 ccost
 
 # Filter by date range
-ccost -since 2026-02-01
-ccost -since 2026-02-01 -until 2026-02-07
+ccost --since 2026-02-01
+ccost -s 2026-02-01 -u 2026-02-07
 
 # Filter by project name (substring match)
-ccost -project myapp
+ccost --project myapp
 
 # Group by project
-ccost -by-project
+ccost --by-project
 
 # Show per-model breakdown
-ccost -models
+ccost --models
 
 # Combine flags
-ccost -by-project -models -since 2026-02-01
+ccost --by-project --models --since 2026-02-01
 
 # JSON output
-ccost -json
-ccost -json -models
+ccost --json
+ccost --json --models
 ```
 
 ## Examples
@@ -72,7 +72,7 @@ ccost -json -models
 ╰─────────────┴────────┴─────────┴─────────────┴────────────┴────────╯
 ```
 
-### Per-model breakdown (`-models`)
+### Per-model breakdown (`--models`)
 
 ```
 ╭─────────────┬───────────────────┬────────┬─────────┬─────────────┬────────────┬────────╮
@@ -90,14 +90,14 @@ ccost -json -models
 
 ## Flags
 
-| Flag | Description |
-|------|-------------|
-| `-since YYYY-MM-DD` | Start date filter |
-| `-until YYYY-MM-DD` | End date filter (inclusive) |
-| `-project NAME` | Filter by project name (substring match) |
-| `-by-project` | Group by project instead of date |
-| `-models` | Show per-model token breakdown |
-| `-json` | Output as JSON |
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--since YYYY-MM-DD` | `-s` | Start date filter |
+| `--until YYYY-MM-DD` | `-u` | End date filter (inclusive) |
+| `--project NAME` | `-p` | Filter by project name (substring match) |
+| `--by-project` | | Group by project instead of date |
+| `--models` | `-m` | Show per-model token breakdown |
+| `--json` | | Output as JSON |
 
 ## How it works
 

@@ -1,11 +1,11 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"time"
 
+	flag "github.com/spf13/pflag"
 	"github.com/zulerne/ccost/internal/display"
 	"github.com/zulerne/ccost/internal/parser"
 	"github.com/zulerne/ccost/internal/report"
@@ -21,11 +21,11 @@ func main() {
 		jsonOut   bool
 	)
 
-	flag.StringVar(&sinceStr, "since", "", "start date (YYYY-MM-DD)")
-	flag.StringVar(&untilStr, "until", "", "end date (YYYY-MM-DD), inclusive")
-	flag.StringVar(&project, "project", "", "filter by project name (substring)")
+	flag.StringVarP(&sinceStr, "since", "s", "", "start date (YYYY-MM-DD)")
+	flag.StringVarP(&untilStr, "until", "u", "", "end date (YYYY-MM-DD), inclusive")
+	flag.StringVarP(&project, "project", "p", "", "filter by project name (substring)")
 	flag.BoolVar(&byProject, "by-project", false, "group by project instead of date")
-	flag.BoolVar(&models, "models", false, "show per-model breakdown")
+	flag.BoolVarP(&models, "models", "m", false, "show per-model breakdown")
 	flag.BoolVar(&jsonOut, "json", false, "output as JSON")
 	flag.Parse()
 
