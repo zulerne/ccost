@@ -6,6 +6,8 @@ Built with Go as a single binary — no runtime dependencies, no network access.
 
 Alternative to [ccusage](https://github.com/ryoppippi/ccusage).
 
+![demo](demo.gif)
+
 ## Installation
 
 ### Homebrew
