@@ -1,8 +1,10 @@
 # ccost
 
-A fast, single-binary CLI tool to analyze [Claude Code](https://claude.com/claude-code) token usage and costs. No runtime dependencies, no network access — just reads your local JSONL logs.
+A fast, standalone CLI tool to analyze [Claude Code](https://claude.com/claude-code) token usage and costs.
 
-An alternative to [ccusage](https://github.com/ryoppippi/ccusage) (npm) that doesn't require Node.js.
+Built with Go as a single binary — no runtime dependencies, no network access. Just reads your local JSONL session logs.
+
+Alternative to [ccusage](https://github.com/ryoppippi/ccusage).
 
 ## Installation
 
@@ -120,6 +122,14 @@ ccost -json -models
 *Prices per 1M tokens. Cache write/read use Claude Code's 1-hour ephemeral cache rates.*
 
 Unknown models show token counts with cost as `N/A` and a warning on stderr.
+
+## Development
+
+```bash
+make build    # Build binary
+make test     # Run tests
+make install  # Install to $GOPATH/bin
+```
 
 ## License
 
