@@ -13,18 +13,15 @@ builds:
       - arm64
 
 archives:
-  - format: tar.gz
+  - formats: [tar.gz]
 
-brews:
+homebrew_casks:
   - repository:
       owner: zulerne
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: https://github.com/zulerne/ccost
     description: Fast CLI to analyze Claude Code token usage and costs
-    license: MIT
-    install: |
-      bin.install "ccost"
 
 checksum:
   name_template: checksums.txt
