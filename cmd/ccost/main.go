@@ -11,14 +11,17 @@ import (
 	"github.com/zulerne/ccost/internal/report"
 )
 
+var version = "dev"
+
 func main() {
 	var (
-		sinceStr  string
-		untilStr  string
-		project   string
-		byProject bool
-		models    bool
-		jsonOut   bool
+		sinceStr   string
+		untilStr   string
+		project    string
+		byProject  bool
+		models     bool
+		jsonOut    bool
+		versionOut bool
 	)
 
 	flag.StringVarP(&sinceStr, "since", "s", "", "start date (YYYY-MM-DD)")
@@ -27,7 +30,13 @@ func main() {
 	flag.BoolVar(&byProject, "by-project", false, "group by project instead of date")
 	flag.BoolVarP(&models, "models", "m", false, "show per-model breakdown")
 	flag.BoolVar(&jsonOut, "json", false, "output as JSON")
+	flag.BoolVarP(&versionOut, "version", "v", false, "print version and exit")
 	flag.Parse()
+
+	if versionOut {
+		fmt.Println("ccost " + version)
+		os.Exit(0)
+	}
 
 	opts := parser.Options{
 		Project: project,
