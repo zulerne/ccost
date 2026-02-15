@@ -46,12 +46,14 @@ ccost -s 2026-02-01 -u 2026-02-07
 
 # Filter by project name (substring match)
 ccost --project myapp
+ccost -p myapp
 
 # Group by project
 ccost --by-project
 
 # Show per-model breakdown
 ccost --models
+ccost -m
 
 # Combine flags
 ccost --by-project --models --since 2026-02-01
