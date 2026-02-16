@@ -26,7 +26,7 @@ func TestParseBasic(t *testing.T) {
 {"type":"assistant","timestamp":"2026-02-14T10:02:00.000Z","cwd":"/home/user/myproject","message":{"id":"msg_002","model":"claude-opus-4-6","usage":{"input_tokens":150,"output_tokens":75,"cache_creation_input_tokens":0,"cache_read_input_tokens":500}}}
 `
 	dir := setupTestDir(t, data)
-	records, warnings, err := parseDir(dir, Options{})
+	records, _, warnings, err := parseDir(dir, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestDeduplication(t *testing.T) {
 {"type":"assistant","timestamp":"2026-02-14T10:00:01.000Z","cwd":"/home/user/proj","message":{"id":"msg_dup","model":"claude-opus-4-6","usage":{"input_tokens":100,"output_tokens":50,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}
 `
 	dir := setupTestDir(t, data)
-	records, _, err := parseDir(dir, Options{})
+	records, _, _, err := parseDir(dir, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func TestFilterSince(t *testing.T) {
 `
 	dir := setupTestDir(t, data)
 	since, _ := time.Parse("2006-01-02", "2026-02-12")
-	records, _, err := parseDir(dir, Options{Since: since})
+	records, _, _, err := parseDir(dir, Options{Since: since})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,12 +81,12 @@ func TestFilterProject(t *testing.T) {
 `
 	dir := setupTestDir(t, data)
 
-	records, _, _ := parseDir(dir, Options{Project: "myapp"})
+	records, _, _, _ := parseDir(dir, Options{Project: "myapp"})
 	if len(records) != 1 {
 		t.Errorf("expected 1 record matching 'myapp', got %d", len(records))
 	}
 
-	records, _, _ = parseDir(dir, Options{Project: "other"})
+	records, _, _, _ = parseDir(dir, Options{Project: "other"})
 	if len(records) != 0 {
 		t.Errorf("expected 0 records for 'other', got %d", len(records))
 	}
@@ -96,7 +96,7 @@ func TestUnknownModel(t *testing.T) {
 	data := `{"type":"assistant","timestamp":"2026-02-14T10:00:00.000Z","cwd":"/home/user/proj","message":{"id":"msg_001","model":"claude-future-99","usage":{"input_tokens":100,"output_tokens":50,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}
 `
 	dir := setupTestDir(t, data)
-	_, warnings, err := parseDir(dir, Options{})
+	_, _, warnings, err := parseDir(dir, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestZeroTokensSkipped(t *testing.T) {
 {"type":"assistant","timestamp":"2026-02-14T10:01:00.000Z","cwd":"/home/user/proj","message":{"id":"msg_real","model":"claude-opus-4-6","usage":{"input_tokens":100,"output_tokens":50,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}
 `
 	dir := setupTestDir(t, data)
-	records, warnings, err := parseDir(dir, Options{})
+	records, _, warnings, err := parseDir(dir, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +147,7 @@ func TestSubagentFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	records, warnings, err := parseDir(dir, Options{})
+	records, sessions, warnings, err := parseDir(dir, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,13 +168,21 @@ func TestSubagentFiles(t *testing.T) {
 	if !hasHaiku {
 		t.Error("expected subagent with haiku model to be parsed")
 	}
+
+	// Only main session file should produce a session (not subagent).
+	if len(sessions) != 1 {
+		t.Fatalf("expected 1 session (main only), got %d", len(sessions))
+	}
+	if sessions[0].Project != "proj" {
+		t.Errorf("expected session project 'proj', got %q", sessions[0].Project)
+	}
 }
 
 func TestModelNormalization(t *testing.T) {
 	data := `{"type":"assistant","timestamp":"2026-02-14T10:00:00.000Z","cwd":"/home/user/proj","message":{"id":"msg_001","model":"claude-sonnet-4-5-20250929","usage":{"input_tokens":100,"output_tokens":50,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}
 `
 	dir := setupTestDir(t, data)
-	records, warnings, err := parseDir(dir, Options{})
+	records, _, warnings, err := parseDir(dir, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -186,5 +194,47 @@ func TestModelNormalization(t *testing.T) {
 	}
 	if len(warnings) != 0 {
 		t.Errorf("expected no warnings for known model, got %v", warnings)
+	}
+}
+
+func TestSessionDuration(t *testing.T) {
+	// Session with user, assistant, and progress entries spanning 2 minutes.
+	data := `{"type":"user","timestamp":"2026-02-14T10:00:00.000Z","cwd":"/home/user/proj","message":{"role":"user","content":"hello"}}
+{"type":"assistant","timestamp":"2026-02-14T10:00:05.000Z","cwd":"/home/user/proj","message":{"id":"msg_001","model":"claude-opus-4-6","usage":{"input_tokens":100,"output_tokens":50,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}
+{"type":"progress","timestamp":"2026-02-14T10:01:00.000Z"}
+{"type":"user","timestamp":"2026-02-14T10:02:00.000Z","cwd":"/home/user/proj","message":{"role":"user","content":"thanks"}}
+`
+	dir := setupTestDir(t, data)
+	_, sessions, _, err := parseDir(dir, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sessions) != 1 {
+		t.Fatalf("expected 1 session, got %d", len(sessions))
+	}
+	if sessions[0].Duration != 2*time.Minute {
+		t.Errorf("expected duration 2m, got %v", sessions[0].Duration)
+	}
+	if sessions[0].Date != "2026-02-14" {
+		t.Errorf("expected date '2026-02-14', got %q", sessions[0].Date)
+	}
+	if sessions[0].Project != "proj" {
+		t.Errorf("expected project 'proj', got %q", sessions[0].Project)
+	}
+}
+
+func TestSessionFilteredByDate(t *testing.T) {
+	data := `{"type":"user","timestamp":"2026-02-10T10:00:00.000Z","cwd":"/home/user/proj","message":{"role":"user","content":"hello"}}
+{"type":"assistant","timestamp":"2026-02-10T10:05:00.000Z","cwd":"/home/user/proj","message":{"id":"msg_001","model":"claude-opus-4-6","usage":{"input_tokens":100,"output_tokens":50,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}
+`
+	dir := setupTestDir(t, data)
+	since, _ := time.Parse("2006-01-02", "2026-02-12")
+	_, sessions, _, err := parseDir(dir, Options{Since: since})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Session ends before Since, so it should be excluded.
+	if len(sessions) != 0 {
+		t.Errorf("expected 0 sessions (filtered by since), got %d", len(sessions))
 	}
 }

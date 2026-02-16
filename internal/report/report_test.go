@@ -37,7 +37,7 @@ func TestByDateMergesModels(t *testing.T) {
 		},
 	}
 
-	rpt := ByDate(records)
+	rpt := ByDate(records, nil)
 
 	// Two models on 2026-02-14 should merge into one row.
 	if len(rpt.Rows) != 2 {
@@ -80,7 +80,7 @@ func TestByProject(t *testing.T) {
 		},
 	}
 
-	rpt := ByProject(records)
+	rpt := ByProject(records, nil)
 	if len(rpt.Rows) != 2 {
 		t.Fatalf("expected 2 rows, got %d", len(rpt.Rows))
 	}
@@ -107,7 +107,7 @@ func TestByDateDetailedSplitsModels(t *testing.T) {
 		},
 	}
 
-	rpt := ByDateDetailed(records)
+	rpt := ByDateDetailed(records, nil)
 
 	// Same date but different models should produce 2 rows.
 	if len(rpt.Rows) != 2 {
@@ -133,7 +133,7 @@ func TestUnknownModelCost(t *testing.T) {
 			Output: 50,
 		},
 	}
-	rpt := ByDate(records)
+	rpt := ByDate(records, nil)
 	if rpt.Rows[0].Cost != -1 {
 		t.Errorf("expected cost -1 for unknown model, got %f", rpt.Rows[0].Cost)
 	}
@@ -148,9 +148,100 @@ func TestTotalCostKnown(t *testing.T) {
 			Output: 500,
 		},
 	}
-	rpt := ByDate(records)
+	rpt := ByDate(records, nil)
 	// 1000*5/1M + 500*25/1M = 0.005 + 0.0125 = 0.0175
 	if !almostEqual(rpt.Total.Cost, 0.0175) {
 		t.Errorf("expected total cost ~0.0175, got %f", rpt.Total.Cost)
+	}
+}
+
+func TestByDateWithDuration(t *testing.T) {
+	records := []parser.Record{
+		{
+			Time:   time.Date(2026, 2, 14, 10, 0, 0, 0, time.UTC),
+			Model:  "claude-opus-4-6",
+			Input:  1000,
+			Output: 500,
+		},
+	}
+	sessions := []parser.Session{
+		{Date: "2026-02-14", Project: "proj", Duration: 30 * time.Minute},
+		{Date: "2026-02-14", Project: "proj", Duration: 15 * time.Minute},
+	}
+
+	rpt := ByDate(records, sessions)
+	if rpt.Rows[0].Duration != 45*time.Minute {
+		t.Errorf("expected duration 45m, got %v", rpt.Rows[0].Duration)
+	}
+	if rpt.Total.Duration != 45*time.Minute {
+		t.Errorf("expected total duration 45m, got %v", rpt.Total.Duration)
+	}
+}
+
+func TestByDateDetailedDuration(t *testing.T) {
+	records := []parser.Record{
+		{
+			Time:    time.Date(2026, 2, 14, 10, 0, 0, 0, time.UTC),
+			Model:   "claude-opus-4-6",
+			Project: "proj",
+			Input:   1000,
+			Output:  500,
+		},
+		{
+			Time:    time.Date(2026, 2, 14, 11, 0, 0, 0, time.UTC),
+			Model:   "claude-sonnet-4-5",
+			Project: "proj",
+			Input:   2000,
+			Output:  1000,
+		},
+	}
+	sessions := []parser.Session{
+		{Date: "2026-02-14", Project: "proj", Duration: 1 * time.Hour},
+	}
+
+	rpt := ByDateDetailed(records, sessions)
+	// Only first row of the key group should have duration.
+	if rpt.Rows[0].Duration != 1*time.Hour {
+		t.Errorf("expected first row duration 1h, got %v", rpt.Rows[0].Duration)
+	}
+	if rpt.Rows[1].Duration != 0 {
+		t.Errorf("expected second row duration 0, got %v", rpt.Rows[1].Duration)
+	}
+	if rpt.Total.Duration != 1*time.Hour {
+		t.Errorf("expected total duration 1h, got %v", rpt.Total.Duration)
+	}
+}
+
+func TestByProjectWithDuration(t *testing.T) {
+	records := []parser.Record{
+		{
+			Time:    time.Date(2026, 2, 14, 10, 0, 0, 0, time.UTC),
+			Model:   "claude-opus-4-6",
+			Project: "alpha",
+			Input:   100,
+			Output:  50,
+		},
+		{
+			Time:    time.Date(2026, 2, 15, 10, 0, 0, 0, time.UTC),
+			Model:   "claude-opus-4-6",
+			Project: "beta",
+			Input:   200,
+			Output:  100,
+		},
+	}
+	sessions := []parser.Session{
+		{Date: "2026-02-14", Project: "alpha", Duration: 20 * time.Minute},
+		{Date: "2026-02-15", Project: "beta", Duration: 40 * time.Minute},
+	}
+
+	rpt := ByProject(records, sessions)
+	if rpt.Rows[0].Duration != 20*time.Minute {
+		t.Errorf("expected alpha duration 20m, got %v", rpt.Rows[0].Duration)
+	}
+	if rpt.Rows[1].Duration != 40*time.Minute {
+		t.Errorf("expected beta duration 40m, got %v", rpt.Rows[1].Duration)
+	}
+	if rpt.Total.Duration != 60*time.Minute {
+		t.Errorf("expected total duration 60m, got %v", rpt.Total.Duration)
 	}
 }

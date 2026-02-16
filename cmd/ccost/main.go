@@ -61,7 +61,7 @@ func main() {
 		opts.Until = t.Add(24*time.Hour - time.Nanosecond)
 	}
 
-	records, warnings, err := parser.Parse(opts)
+	records, sessions, warnings, err := parser.Parse(opts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
@@ -80,16 +80,16 @@ func main() {
 	keyHeader := "Date"
 	if byProject {
 		if models {
-			rpt = report.ByProjectDetailed(records)
+			rpt = report.ByProjectDetailed(records, sessions)
 		} else {
-			rpt = report.ByProject(records)
+			rpt = report.ByProject(records, sessions)
 		}
 		keyHeader = "Project"
 	} else {
 		if models {
-			rpt = report.ByDateDetailed(records)
+			rpt = report.ByDateDetailed(records, sessions)
 		} else {
-			rpt = report.ByDate(records)
+			rpt = report.ByDate(records, sessions)
 		}
 	}
 

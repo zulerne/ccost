@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/zulerne/ccost/internal/report"
 )
@@ -26,6 +27,7 @@ func sampleReport() report.Report {
 				CacheWrite: 130693,
 				CacheRead:  6430159,
 				Cost:       12.80,
+				Duration:   2*time.Hour + 15*time.Minute,
 			},
 		},
 		Total: report.Row{
@@ -35,6 +37,7 @@ func sampleReport() report.Report {
 			CacheWrite: 130693,
 			CacheRead:  6430159,
 			Cost:       12.80,
+			Duration:   2*time.Hour + 15*time.Minute,
 		},
 	}
 }
@@ -47,11 +50,17 @@ func TestTable(t *testing.T) {
 	if !strings.Contains(out, "DATE") {
 		t.Errorf("expected 'DATE' header in output:\n%s", out)
 	}
+	if !strings.Contains(out, "TIME") {
+		t.Errorf("expected 'TIME' header in output:\n%s", out)
+	}
 	if !strings.Contains(out, "19,290") {
 		t.Errorf("expected formatted number '19,290' in output:\n%s", out)
 	}
 	if !strings.Contains(out, "$12.80") {
 		t.Errorf("expected cost '$12.80' in output:\n%s", out)
+	}
+	if !strings.Contains(out, "2H15M") {
+		t.Errorf("expected duration '2H15M' in output:\n%s", out)
 	}
 	if !strings.Contains(out, "TOTAL") {
 		t.Error("expected TOTAL row")
@@ -74,12 +83,20 @@ func TestJSON(t *testing.T) {
 		t.Fatalf("expected 1 row, got %v", result["rows"])
 	}
 
+	row := rows[0].(map[string]interface{})
+	if row["duration_seconds"] != float64(8100) {
+		t.Errorf("expected duration_seconds 8100, got %v", row["duration_seconds"])
+	}
+
 	total, ok := result["total"].(map[string]interface{})
 	if !ok {
 		t.Fatal("expected total object")
 	}
 	if total["key"] != "TOTAL" {
 		t.Errorf("expected total key 'TOTAL', got %v", total["key"])
+	}
+	if total["duration_seconds"] != float64(8100) {
+		t.Errorf("expected total duration_seconds 8100, got %v", total["duration_seconds"])
 	}
 }
 
@@ -115,6 +132,25 @@ func TestFormatCostRounding(t *testing.T) {
 		got := formatCost(tt.in)
 		if got != tt.want {
 			t.Errorf("formatCost(%f) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestFormatDuration(t *testing.T) {
+	tests := []struct {
+		in   time.Duration
+		want string
+	}{
+		{0, ""},
+		{5 * time.Minute, "0h05m"},
+		{90 * time.Minute, "1h30m"},
+		{2*time.Hour + 15*time.Minute, "2h15m"},
+		{10*time.Hour + 3*time.Minute, "10h03m"},
+	}
+	for _, tt := range tests {
+		got := formatDuration(tt.in)
+		if got != tt.want {
+			t.Errorf("formatDuration(%v) = %q, want %q", tt.in, got, tt.want)
 		}
 	}
 }

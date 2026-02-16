@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -30,6 +31,15 @@ func formatCost(cost float64) string {
 		return "N/A"
 	}
 	return fmt.Sprintf("$%.2f", cost)
+}
+
+func formatDuration(d time.Duration) string {
+	if d == 0 {
+		return ""
+	}
+	h := int(d.Hours())
+	m := int(d.Minutes()) % 60
+	return fmt.Sprintf("%dh%02dm", h, m)
 }
 
 func hasModels(rpt report.Report) bool {
@@ -77,9 +87,9 @@ func Table(w io.Writer, rpt report.Report, keyHeader string) {
 	}
 
 	if showModel {
-		tw.AppendHeader(table.Row{displayHeader, "Model", "Input", "Output", "Cache Write", "Cache Read", "Cost"})
+		tw.AppendHeader(table.Row{displayHeader, "Model", "Input", "Output", "Cache Write", "Cache Read", "Time", "Cost"})
 	} else {
-		tw.AppendHeader(table.Row{displayHeader, "Input", "Output", "Cache Write", "Cache Read", "Cost"})
+		tw.AppendHeader(table.Row{displayHeader, "Input", "Output", "Cache Write", "Cache Read", "Time", "Cost"})
 	}
 
 	if showModel {
@@ -103,6 +113,7 @@ func Table(w io.Writer, rpt report.Report, keyHeader string) {
 				formatNum(row.Output),
 				formatNum(row.CacheWrite),
 				formatNum(row.CacheRead),
+				formatDuration(row.Duration),
 				formatCost(row.Cost),
 			})
 		}
@@ -118,6 +129,7 @@ func Table(w io.Writer, rpt report.Report, keyHeader string) {
 				formatNum(row.Output),
 				formatNum(row.CacheWrite),
 				formatNum(row.CacheRead),
+				formatDuration(row.Duration),
 				formatCost(row.Cost),
 			})
 		}
@@ -130,6 +142,7 @@ func Table(w io.Writer, rpt report.Report, keyHeader string) {
 			formatNum(rpt.Total.Output),
 			formatNum(rpt.Total.CacheWrite),
 			formatNum(rpt.Total.CacheRead),
+			formatDuration(rpt.Total.Duration),
 			formatCost(rpt.Total.Cost),
 		})
 	} else {
@@ -139,6 +152,7 @@ func Table(w io.Writer, rpt report.Report, keyHeader string) {
 			formatNum(rpt.Total.Output),
 			formatNum(rpt.Total.CacheWrite),
 			formatNum(rpt.Total.CacheRead),
+			formatDuration(rpt.Total.Duration),
 			formatCost(rpt.Total.Cost),
 		})
 	}
@@ -149,7 +163,7 @@ func Table(w io.Writer, rpt report.Report, keyHeader string) {
 		numStart = 3
 	}
 	var colConfigs []table.ColumnConfig
-	for i := numStart; i <= numStart+4; i++ {
+	for i := numStart; i <= numStart+5; i++ {
 		colConfigs = append(colConfigs, table.ColumnConfig{
 			Number:      i,
 			Align:       text.AlignRight,

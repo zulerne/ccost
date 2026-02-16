@@ -2,6 +2,7 @@ package report
 
 import (
 	"sort"
+	"time"
 
 	"github.com/zulerne/ccost/internal/parser"
 	"github.com/zulerne/ccost/internal/pricing"
@@ -15,7 +16,8 @@ type Row struct {
 	Output     int
 	CacheWrite int
 	CacheRead  int
-	Cost       float64 // -1 if contains unknown model with non-zero tokens
+	Cost       float64       // -1 if contains unknown model with non-zero tokens
+	Duration   time.Duration // session time; zero for per-model detail rows
 }
 
 // Report holds aggregated rows and a total.
@@ -25,30 +27,38 @@ type Report struct {
 }
 
 // ByDate groups records by date, merging all models.
-func ByDate(records []parser.Record) Report {
-	return aggregate(records, func(r parser.Record) string {
+func ByDate(records []parser.Record, sessions []parser.Session) Report {
+	return aggregate(records, sessions, func(r parser.Record) string {
 		return r.Time.Format("2006-01-02")
+	}, func(s parser.Session) string {
+		return s.Date
 	}, false)
 }
 
 // ByDateDetailed groups records by date + model.
-func ByDateDetailed(records []parser.Record) Report {
-	return aggregate(records, func(r parser.Record) string {
+func ByDateDetailed(records []parser.Record, sessions []parser.Session) Report {
+	return aggregate(records, sessions, func(r parser.Record) string {
 		return r.Time.Format("2006-01-02")
+	}, func(s parser.Session) string {
+		return s.Date
 	}, true)
 }
 
 // ByProject groups records by project, merging all models.
-func ByProject(records []parser.Record) Report {
-	return aggregate(records, func(r parser.Record) string {
+func ByProject(records []parser.Record, sessions []parser.Session) Report {
+	return aggregate(records, sessions, func(r parser.Record) string {
 		return r.Project
+	}, func(s parser.Session) string {
+		return s.Project
 	}, false)
 }
 
 // ByProjectDetailed groups records by project + model.
-func ByProjectDetailed(records []parser.Record) Report {
-	return aggregate(records, func(r parser.Record) string {
+func ByProjectDetailed(records []parser.Record, sessions []parser.Session) Report {
+	return aggregate(records, sessions, func(r parser.Record) string {
 		return r.Project
+	}, func(s parser.Session) string {
+		return s.Project
 	}, true)
 }
 
@@ -62,7 +72,13 @@ type accum struct {
 	hasUnknown bool
 }
 
-func aggregate(records []parser.Record, keyFn func(parser.Record) string, detailed bool) Report {
+func aggregate(
+	records []parser.Record,
+	sessions []parser.Session,
+	keyFn func(parser.Record) string,
+	sessionKeyFn func(parser.Session) string,
+	detailed bool,
+) Report {
 	groups := map[groupKey]*accum{}
 	var keys []groupKey
 
@@ -90,6 +106,12 @@ func aggregate(records []parser.Record, keyFn func(parser.Record) string, detail
 		}
 	}
 
+	// Aggregate session durations per key (not per model).
+	durations := map[string]time.Duration{}
+	for _, s := range sessions {
+		durations[sessionKeyFn(s)] += s.Duration
+	}
+
 	sort.Slice(keys, func(i, j int) bool {
 		if keys[i].key != keys[j].key {
 			return keys[i].key < keys[j].key
@@ -102,10 +124,16 @@ func aggregate(records []parser.Record, keyFn func(parser.Record) string, detail
 	totalHasUnknown := false
 
 	rows := make([]Row, 0, len(keys))
+	seen := map[string]bool{}
 	for _, k := range keys {
 		a := groups[k]
 		if a.hasUnknown {
 			a.Cost = -1
+		}
+		// Assign duration: once per key group (first row only in detailed mode).
+		if !detailed || !seen[k.key] {
+			a.Duration = durations[k.key]
+			seen[k.key] = true
 		}
 		rows = append(rows, a.Row)
 
@@ -122,6 +150,10 @@ func aggregate(records []parser.Record, keyFn func(parser.Record) string, detail
 
 	if totalHasUnknown {
 		total.Cost = -1
+	}
+
+	for _, d := range durations {
+		total.Duration += d
 	}
 
 	return Report{Rows: rows, Total: total}

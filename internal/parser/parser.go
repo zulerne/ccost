@@ -48,6 +48,14 @@ type Record struct {
 	CacheRead  int
 }
 
+// Session represents time spent in a main session file on a single day.
+// A session spanning multiple days produces one Session per day.
+type Session struct {
+	Date     string // YYYY-MM-DD
+	Project  string
+	Duration time.Duration
+}
+
 type Options struct {
 	Since   time.Time
 	Until   time.Time
@@ -62,16 +70,16 @@ func claudeDir() (string, error) {
 	return filepath.Join(home, ".claude", "projects"), nil
 }
 
-// Parse reads all JSONL files under ~/.claude/projects and returns deduplicated records.
-func Parse(opts Options) ([]Record, []string, error) {
+// Parse reads all JSONL files under ~/.claude/projects and returns deduplicated records and sessions.
+func Parse(opts Options) ([]Record, []Session, []string, error) {
 	dir, err := claudeDir()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	return parseDir(dir, opts)
 }
 
-func parseDir(dir string, opts Options) ([]Record, []string, error) {
+func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
 	// Main session files: <project>/<uuid>.jsonl
 	mainPattern := filepath.Join(dir, "*", "*.jsonl")
 	// Subagent files: <project>/<uuid>/subagents/agent-*.jsonl
@@ -79,18 +87,30 @@ func parseDir(dir string, opts Options) ([]Record, []string, error) {
 
 	mainFiles, err := filepath.Glob(mainPattern)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	subFiles, _ := filepath.Glob(subPattern)
-	files := append(mainFiles, subFiles...)
 
 	var allRecords []Record
+	var allSessions []Session
 	unknownModels := map[string]bool{}
 
-	for _, f := range files {
-		records, unknown, err := parseFile(f, opts)
+	for _, f := range mainFiles {
+		records, sessions, unknown, err := parseFile(f, opts, true)
 		if err != nil {
-			continue // skip broken files
+			continue
+		}
+		allRecords = append(allRecords, records...)
+		allSessions = append(allSessions, sessions...)
+		for _, m := range unknown {
+			unknownModels[m] = true
+		}
+	}
+
+	for _, f := range subFiles {
+		records, _, unknown, err := parseFile(f, opts, false)
+		if err != nil {
+			continue
 		}
 		allRecords = append(allRecords, records...)
 		for _, m := range unknown {
@@ -102,25 +122,47 @@ func parseDir(dir string, opts Options) ([]Record, []string, error) {
 		return allRecords[i].Time.Before(allRecords[j].Time)
 	})
 
+	sort.Slice(allSessions, func(i, j int) bool {
+		return allSessions[i].Date < allSessions[j].Date
+	})
+
 	var warnings []string
 	for m := range unknownModels {
 		warnings = append(warnings, "unknown model: "+m)
 	}
 	sort.Strings(warnings)
 
-	return allRecords, warnings, nil
+	return allRecords, allSessions, warnings, nil
 }
 
-func parseFile(path string, opts Options) ([]Record, []string, error) {
+func parseTime(s string) (time.Time, bool) {
+	t, err := time.Parse(time.RFC3339Nano, s)
+	if err != nil {
+		t, err = time.Parse(time.RFC3339, s)
+		if err != nil {
+			return time.Time{}, false
+		}
+	}
+	return t, true
+}
+
+// dayBounds tracks min/max timestamps for a single day.
+type dayBounds struct {
+	min, max time.Time
+}
+
+func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []string, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	defer f.Close()
 
 	// First pass: collect entries, deduplicate by message.id (keep max output_tokens).
+	// Also track min/max timestamps per day for session duration (main files only).
 	best := map[string]Entry{}
 	var project string
+	days := map[string]*dayBounds{} // date string → bounds
 
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 0, 1024*1024), 10*1024*1024)
@@ -129,11 +171,33 @@ func parseFile(path string, opts Options) ([]Record, []string, error) {
 		if err := json.Unmarshal(scanner.Bytes(), &e); err != nil {
 			continue
 		}
-		if e.Type != "assistant" || e.Message.ID == "" {
-			continue
-		}
+
+		// Extract project from any entry with CWD.
 		if project == "" && e.CWD != "" {
 			project = filepath.Base(e.CWD)
+		}
+
+		// Track timestamps per day for session duration.
+		if isMain && e.Timestamp != "" {
+			if t, ok := parseTime(e.Timestamp); ok {
+				day := t.Format("2006-01-02")
+				b, exists := days[day]
+				if !exists {
+					b = &dayBounds{min: t, max: t}
+					days[day] = b
+				} else {
+					if t.Before(b.min) {
+						b.min = t
+					}
+					if t.After(b.max) {
+						b.max = t
+					}
+				}
+			}
+		}
+
+		if e.Type != "assistant" || e.Message.ID == "" {
+			continue
 		}
 		if prev, ok := best[e.Message.ID]; ok {
 			if e.Message.Usage.OutputTokens > prev.Message.Usage.OutputTokens {
@@ -145,7 +209,7 @@ func parseFile(path string, opts Options) ([]Record, []string, error) {
 	}
 
 	if opts.Project != "" && !strings.Contains(strings.ToLower(project), strings.ToLower(opts.Project)) {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 
 	var records []Record
@@ -157,12 +221,9 @@ func parseFile(path string, opts Options) ([]Record, []string, error) {
 			continue
 		}
 
-		t, err := time.Parse(time.RFC3339Nano, e.Timestamp)
-		if err != nil {
-			t, err = time.Parse(time.RFC3339, e.Timestamp)
-			if err != nil {
-				continue
-			}
+		t, ok := parseTime(e.Timestamp)
+		if !ok {
+			continue
 		}
 
 		if !opts.Since.IsZero() && t.Before(opts.Since) {
@@ -190,10 +251,29 @@ func parseFile(path string, opts Options) ([]Record, []string, error) {
 		})
 	}
 
+	// Build per-day sessions for main files.
+	var sessions []Session
+	if isMain && project != "" {
+		for date, b := range days {
+			day, _ := time.Parse("2006-01-02", date)
+			if !opts.Since.IsZero() && day.Before(opts.Since) {
+				continue
+			}
+			if !opts.Until.IsZero() && day.After(opts.Until) {
+				continue
+			}
+			sessions = append(sessions, Session{
+				Date:     date,
+				Project:  project,
+				Duration: b.max.Sub(b.min),
+			})
+		}
+	}
+
 	var warnings []string
 	for m := range unknownModels {
 		warnings = append(warnings, m)
 	}
 
-	return records, warnings, nil
+	return records, sessions, warnings, nil
 }
