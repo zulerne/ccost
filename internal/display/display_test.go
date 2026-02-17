@@ -44,7 +44,7 @@ func sampleReport() report.Report {
 
 func TestTable(t *testing.T) {
 	var buf bytes.Buffer
-	Table(&buf, sampleReport(), "Date")
+	Table(&buf, sampleReport(), "Date", false)
 	out := strings.ToUpper(stripANSI(buf.String()))
 
 	if !strings.Contains(out, "DATE") {
@@ -53,8 +53,8 @@ func TestTable(t *testing.T) {
 	if !strings.Contains(out, "TIME") {
 		t.Errorf("expected 'TIME' header in output:\n%s", out)
 	}
-	if !strings.Contains(out, "19,290") {
-		t.Errorf("expected formatted number '19,290' in output:\n%s", out)
+	if !strings.Contains(out, "19.3K") {
+		t.Errorf("expected compact number '19.3K' in output:\n%s", out)
 	}
 	if !strings.Contains(out, "$12.80") {
 		t.Errorf("expected cost '$12.80' in output:\n%s", out)
@@ -155,6 +155,41 @@ func TestFormatDuration(t *testing.T) {
 	}
 }
 
+func TestFormatCompact(t *testing.T) {
+	tests := []struct {
+		in   int
+		want string
+	}{
+		{0, "0"},
+		{500, "500"},
+		{999, "999"},
+		{1000, "1K"},
+		{1234, "1.2K"},
+		{19290, "19.3K"},
+		{130693, "130.7K"},
+		{1000000, "1M"},
+		{6430159, "6.4M"},
+		{1234567, "1.2M"},
+		{10000000, "10M"},
+	}
+	for _, tt := range tests {
+		got := formatCompact(tt.in)
+		if got != tt.want {
+			t.Errorf("formatCompact(%d) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestTableExact(t *testing.T) {
+	var buf bytes.Buffer
+	Table(&buf, sampleReport(), "Date", true)
+	out := strings.ToUpper(stripANSI(buf.String()))
+
+	if !strings.Contains(out, "19,290") {
+		t.Errorf("expected exact number '19,290' in output:\n%s", out)
+	}
+}
+
 func TestTableWithModels(t *testing.T) {
 	rpt := report.Report{
 		Rows: []report.Row{
@@ -164,7 +199,7 @@ func TestTableWithModels(t *testing.T) {
 		Total: report.Row{Key: "TOTAL", Input: 3000, Output: 1500, Cost: 0.07},
 	}
 	var buf bytes.Buffer
-	Table(&buf, rpt, "Date")
+	Table(&buf, rpt, "Date", false)
 	out := stripANSI(buf.String())
 
 	if !strings.Contains(strings.ToUpper(out), "MODEL") {
@@ -186,7 +221,7 @@ func TestTableByProject(t *testing.T) {
 		Total: report.Row{Key: "TOTAL", Input: 100, Output: 50, Cost: 0.005},
 	}
 	var buf bytes.Buffer
-	Table(&buf, rpt, "Project")
+	Table(&buf, rpt, "Project", false)
 	if !strings.Contains(strings.ToUpper(stripANSI(buf.String())), "PROJECT") {
 		t.Error("expected 'PROJECT' header")
 	}

@@ -26,6 +26,23 @@ func formatNum(n int) string {
 	return string(result)
 }
 
+func formatCompact(n int) string {
+	switch {
+	case n >= 1_000_000:
+		s := fmt.Sprintf("%.1f", float64(n)/1_000_000)
+		s = strings.TrimRight(s, "0")
+		s = strings.TrimRight(s, ".")
+		return s + "M"
+	case n >= 1_000:
+		s := fmt.Sprintf("%.1f", float64(n)/1_000)
+		s = strings.TrimRight(s, "0")
+		s = strings.TrimRight(s, ".")
+		return s + "K"
+	default:
+		return fmt.Sprintf("%d", n)
+	}
+}
+
 func formatCost(cost float64) string {
 	if cost < 0 {
 		return "N/A"
@@ -73,7 +90,14 @@ func commonYear(rows []report.Row) string {
 }
 
 // Table writes a formatted table to w.
-func Table(w io.Writer, rpt report.Report, keyHeader string) {
+// When exact is true, token counts are shown as full numbers (1,234,567);
+// otherwise they use compact notation (1.2M, 34.5K).
+func Table(w io.Writer, rpt report.Report, keyHeader string, exact bool) {
+	fmtTok := formatCompact
+	if exact {
+		fmtTok = formatNum
+	}
+
 	tw := table.NewWriter()
 	tw.SetOutputMirror(w)
 
@@ -109,10 +133,10 @@ func Table(w io.Writer, rpt report.Report, keyHeader string) {
 			tw.AppendRow(table.Row{
 				displayKey,
 				row.Model,
-				formatNum(row.Input),
-				formatNum(row.Output),
-				formatNum(row.CacheWrite),
-				formatNum(row.CacheRead),
+				fmtTok(row.Input),
+				fmtTok(row.Output),
+				fmtTok(row.CacheWrite),
+				fmtTok(row.CacheRead),
 				formatDuration(row.Duration),
 				formatCost(row.Cost),
 			})
@@ -125,10 +149,10 @@ func Table(w io.Writer, rpt report.Report, keyHeader string) {
 			}
 			tw.AppendRow(table.Row{
 				displayKey,
-				formatNum(row.Input),
-				formatNum(row.Output),
-				formatNum(row.CacheWrite),
-				formatNum(row.CacheRead),
+				fmtTok(row.Input),
+				fmtTok(row.Output),
+				fmtTok(row.CacheWrite),
+				fmtTok(row.CacheRead),
 				formatDuration(row.Duration),
 				formatCost(row.Cost),
 			})
@@ -138,20 +162,20 @@ func Table(w io.Writer, rpt report.Report, keyHeader string) {
 	if showModel {
 		tw.AppendFooter(table.Row{
 			"TOTAL", "",
-			formatNum(rpt.Total.Input),
-			formatNum(rpt.Total.Output),
-			formatNum(rpt.Total.CacheWrite),
-			formatNum(rpt.Total.CacheRead),
+			fmtTok(rpt.Total.Input),
+			fmtTok(rpt.Total.Output),
+			fmtTok(rpt.Total.CacheWrite),
+			fmtTok(rpt.Total.CacheRead),
 			formatDuration(rpt.Total.Duration),
 			formatCost(rpt.Total.Cost),
 		})
 	} else {
 		tw.AppendFooter(table.Row{
 			"TOTAL",
-			formatNum(rpt.Total.Input),
-			formatNum(rpt.Total.Output),
-			formatNum(rpt.Total.CacheWrite),
-			formatNum(rpt.Total.CacheRead),
+			fmtTok(rpt.Total.Input),
+			fmtTok(rpt.Total.Output),
+			fmtTok(rpt.Total.CacheWrite),
+			fmtTok(rpt.Total.CacheRead),
 			formatDuration(rpt.Total.Duration),
 			formatCost(rpt.Total.Cost),
 		})

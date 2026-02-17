@@ -20,6 +20,7 @@ func main() {
 		project    string
 		byProject  bool
 		models     bool
+		exact      bool
 		jsonOut    bool
 		versionOut bool
 	)
@@ -29,6 +30,7 @@ func main() {
 	flag.StringVarP(&project, "project", "p", "", "filter by project name (substring)")
 	flag.BoolVar(&byProject, "by-project", false, "group by project instead of date")
 	flag.BoolVarP(&models, "models", "m", false, "show per-model breakdown")
+	flag.BoolVarP(&exact, "exact", "e", false, "show exact token counts instead of compact (K/M)")
 	flag.BoolVar(&jsonOut, "json", false, "output as JSON")
 	flag.BoolVarP(&versionOut, "version", "v", false, "print version and exit")
 	flag.Parse()
@@ -99,6 +101,6 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
-		display.Table(os.Stdout, rpt, keyHeader)
+		display.Table(os.Stdout, rpt, keyHeader, exact)
 	}
 }
