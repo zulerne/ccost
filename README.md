@@ -37,12 +37,12 @@ make build
 ## Usage
 
 ```bash
-ccost                                        # daily breakdown
-ccost --since 2026-02-01 --until 2026-02-07  # filter by date range
-ccost --project myapp                        # filter by project
-ccost --by-project                           # group by project
-ccost --models                               # per-model breakdown
+ccost                                           # daily breakdown
+ccost --since 2026-02-01 --until 2026-02-07     # filter by date range
+ccost --project myapp                           # filter by project
+ccost --by-project                              # group by project
+ccost --models                                  # per-model breakdown
 ccost --by-project --models --since 2026-02-01  # combine flags
-ccost --json                                 # JSON output
-ccost --exact                                # exact token counts (no K/M)
+ccost --json                                    # JSON output
+ccost --exact                                   # exact token counts (no K/M)
 ```
