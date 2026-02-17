@@ -38,15 +38,11 @@ make build
 
 ```bash
 ccost                                        # daily breakdown
-ccost -s 2026-02-01 -u 2026-02-07            # filter by date range
-ccost -p myapp                               # filter by project
+ccost --since 2026-02-01 --until 2026-02-07  # filter by date range
+ccost --project myapp                        # filter by project
 ccost --by-project                           # group by project
-ccost -m                                     # per-model breakdown
-ccost --by-project -m -s 2026-02-01          # combine flags
+ccost --models                               # per-model breakdown
+ccost --by-project --models --since 2026-02-01  # combine flags
 ccost --json                                 # JSON output
-ccost -e                                     # exact token counts (no K/M)
+ccost --exact                                # exact token counts (no K/M)
 ```
-
-## License
-
-MIT

@@ -28,7 +28,7 @@ func main() {
 	flag.StringVarP(&sinceStr, "since", "s", "", "start date (YYYY-MM-DD)")
 	flag.StringVarP(&untilStr, "until", "u", "", "end date (YYYY-MM-DD), inclusive")
 	flag.StringVarP(&project, "project", "p", "", "filter by project name (substring)")
-	flag.BoolVar(&byProject, "by-project", false, "group by project instead of date")
+	flag.BoolVarP(&byProject, "by-project", "b", false, "group by project instead of date")
 	flag.BoolVarP(&models, "models", "m", false, "show per-model breakdown")
 	flag.BoolVarP(&exact, "exact", "e", false, "show exact token counts instead of compact (K/M)")
 	flag.BoolVar(&jsonOut, "json", false, "output as JSON")
