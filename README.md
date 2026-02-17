@@ -37,8 +37,8 @@ make build
 ## Usage
 
 ```bash
-ccost                                           # daily breakdown
-ccost --since 2026-02-01 --until 2026-02-07     # filter by date range
+ccost                                           # current week (default)
+ccost --since 2026-02-01 --until 2026-02-07     # custom date range
 ccost --project myapp                           # filter by project
 ccost --by-project                              # group by project
 ccost --models                                  # per-model breakdown

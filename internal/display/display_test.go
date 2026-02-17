@@ -44,7 +44,7 @@ func sampleReport() report.Report {
 
 func TestTable(t *testing.T) {
 	var buf bytes.Buffer
-	Table(&buf, sampleReport(), "Date", false)
+	Table(&buf, sampleReport(), "Date", false, "")
 	out := strings.ToUpper(stripANSI(buf.String()))
 
 	if !strings.Contains(out, "DATE") {
@@ -182,7 +182,7 @@ func TestFormatCompact(t *testing.T) {
 
 func TestTableExact(t *testing.T) {
 	var buf bytes.Buffer
-	Table(&buf, sampleReport(), "Date", true)
+	Table(&buf, sampleReport(), "Date", true, "")
 	out := strings.ToUpper(stripANSI(buf.String()))
 
 	if !strings.Contains(out, "19,290") {
@@ -199,7 +199,7 @@ func TestTableWithModels(t *testing.T) {
 		Total: report.Row{Key: "TOTAL", Input: 3000, Output: 1500, Cost: 0.07},
 	}
 	var buf bytes.Buffer
-	Table(&buf, rpt, "Date", false)
+	Table(&buf, rpt, "Date", false, "")
 	out := stripANSI(buf.String())
 
 	if !strings.Contains(strings.ToUpper(out), "MODEL") {
@@ -221,7 +221,7 @@ func TestTableByProject(t *testing.T) {
 		Total: report.Row{Key: "TOTAL", Input: 100, Output: 50, Cost: 0.005},
 	}
 	var buf bytes.Buffer
-	Table(&buf, rpt, "Project", false)
+	Table(&buf, rpt, "Project", false, "")
 	if !strings.Contains(strings.ToUpper(stripANSI(buf.String())), "PROJECT") {
 		t.Error("expected 'PROJECT' header")
 	}

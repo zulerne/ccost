@@ -40,8 +40,20 @@ func main() {
 		os.Exit(0)
 	}
 
+	weeklyMode := sinceStr == "" && untilStr == ""
+
 	opts := parser.Options{
 		Project: project,
+	}
+
+	if weeklyMode {
+		now := time.Now()
+		weekday := now.Weekday()
+		if weekday == time.Sunday {
+			weekday = 7
+		}
+		monday := now.AddDate(0, 0, -int(weekday-time.Monday))
+		opts.Since = time.Date(monday.Year(), monday.Month(), monday.Day(), 0, 0, 0, 0, now.Location())
 	}
 
 	if sinceStr != "" {
@@ -81,12 +93,29 @@ func main() {
 	var rpt report.Report
 	keyHeader := "Date"
 	if byProject {
+		keyHeader = "Project"
+	}
+	var title string
+	if weeklyMode {
+		now := time.Now()
+		sun := opts.Since.AddDate(0, 0, 6)
+		if sun.After(now) {
+			sun = now
+		}
+		title = fmt.Sprintf("Weekly · %s – %s", opts.Since.Format("Jan 02"), sun.Format("Jan 02"))
+	} else if sinceStr != "" && untilStr != "" {
+		title = fmt.Sprintf("Range · %s – %s", opts.Since.Format("Jan 02"), opts.Until.Format("Jan 02"))
+	} else if sinceStr != "" {
+		title = fmt.Sprintf("Since · %s", opts.Since.Format("Jan 02"))
+	} else if untilStr != "" {
+		title = fmt.Sprintf("Until · %s", opts.Until.Format("Jan 02"))
+	}
+	if byProject {
 		if models {
 			rpt = report.ByProjectDetailed(records, sessions)
 		} else {
 			rpt = report.ByProject(records, sessions)
 		}
-		keyHeader = "Project"
 	} else {
 		if models {
 			rpt = report.ByDateDetailed(records, sessions)
@@ -101,6 +130,6 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
-		display.Table(os.Stdout, rpt, keyHeader, exact)
+		display.Table(os.Stdout, rpt, keyHeader, exact, title)
 	}
 }

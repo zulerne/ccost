@@ -70,9 +70,15 @@ func hasModels(rpt report.Report) bool {
 
 // trimDate removes the "YYYY-" prefix from date-shaped keys.
 // Non-date keys are returned as-is.
-func trimDate(key string) string {
+func trimDate(key string, weekday bool) string {
 	if len(key) > 4 && key[4] == '-' {
-		return key[5:]
+		s := key[5:]
+		if weekday {
+			if t, err := time.Parse("2006-01-02", key); err == nil {
+				s = t.Format("Mon") + " " + s
+			}
+		}
+		return s
 	}
 	return key
 }
@@ -88,7 +94,7 @@ func yearOf(key string) string {
 // Table writes a formatted table to w.
 // When exact is true, token counts are shown as full numbers (1,234,567);
 // otherwise they use compact notation (1.2M, 34.5K).
-func Table(w io.Writer, rpt report.Report, keyHeader string, exact bool) {
+func Table(w io.Writer, rpt report.Report, keyHeader string, exact bool, title string) {
 	fmtTok := formatCompact
 	if exact {
 		fmtTok = formatNum
@@ -96,6 +102,11 @@ func Table(w io.Writer, rpt report.Report, keyHeader string, exact bool) {
 
 	tw := table.NewWriter()
 	tw.SetOutputMirror(w)
+
+	weekly := strings.HasPrefix(title, "Weekly")
+	if title != "" {
+		tw.SetTitle(text.FgCyan.Sprint(title))
+	}
 
 	showModel := hasModels(rpt)
 
@@ -107,18 +118,29 @@ func Table(w io.Writer, rpt report.Report, keyHeader string, exact bool) {
 		tw.AppendHeader(table.Row{displayHeader, "Input", "Output", "Write", "Read", "Time", "Cost"})
 	}
 
+	years := make(map[string]bool)
+	for _, row := range rpt.Rows {
+		if y := yearOf(row.Key); y != "" {
+			years[y] = true
+		}
+	}
+	multiYear := len(years) > 1
+
 	if showModel {
 		prevKey := ""
 		prevYear := ""
 		for i, row := range rpt.Rows {
-			if y := yearOf(row.Key); y != "" && y != prevYear {
+			y := yearOf(row.Key)
+			if multiYear && y != "" && y != prevYear {
 				if i > 0 {
 					tw.AppendSeparator()
 				}
 				tw.AppendRow(table.Row{y}, table.RowConfig{AutoMerge: true})
+			}
+			if y != "" {
 				prevYear = y
 			}
-			displayKey := trimDate(row.Key)
+			displayKey := trimDate(row.Key, weekly)
 			if row.Key == prevKey {
 				displayKey = ""
 			} else if i > 0 && yearOf(row.Key) == prevYear {
@@ -140,12 +162,14 @@ func Table(w io.Writer, rpt report.Report, keyHeader string, exact bool) {
 	} else {
 		prevYear := ""
 		for _, row := range rpt.Rows {
-			if y := yearOf(row.Key); y != "" && y != prevYear {
-				tw.AppendRow(table.Row{y}, table.RowConfig{AutoMerge: true})
+			if y := yearOf(row.Key); y != "" {
+				if multiYear && y != prevYear {
+					tw.AppendRow(table.Row{y}, table.RowConfig{AutoMerge: true})
+				}
 				prevYear = y
 			}
 			tw.AppendRow(table.Row{
-				trimDate(row.Key),
+				trimDate(row.Key, weekly),
 				fmtTok(row.Input),
 				fmtTok(row.Output),
 				fmtTok(row.CacheWrite),
