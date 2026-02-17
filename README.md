@@ -37,68 +37,15 @@ make build
 ## Usage
 
 ```bash
-# Daily breakdown (default)
-ccost
-
-# Filter by date range
-ccost --since 2026-02-01
-ccost -s 2026-02-01 -u 2026-02-07
-
-# Filter by project name (substring match)
-ccost --project myapp
-ccost -p myapp
-
-# Group by project
-ccost --by-project
-
-# Show per-model breakdown
-ccost --models
-ccost -m
-
-# Combine flags
-ccost --by-project --models --since 2026-02-01
-
-# JSON output
-ccost --json
-ccost --json --models
+ccost                                        # daily breakdown
+ccost -s 2026-02-01 -u 2026-02-07           # filter by date range
+ccost -p myapp                               # filter by project
+ccost --by-project                           # group by project
+ccost -m                                     # per-model breakdown
+ccost --by-project -m -s 2026-02-01         # combine flags
+ccost --json                                 # JSON output
+ccost -e                                     # exact token counts (no K/M)
 ```
-
-## Flags
-
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--since YYYY-MM-DD` | `-s` | Start date filter |
-| `--until YYYY-MM-DD` | `-u` | End date filter (inclusive) |
-| `--project NAME` | `-p` | Filter by project name (substring match) |
-| `--by-project` | | Group by project instead of date |
-| `--models` | `-m` | Show per-model token breakdown |
-| `--exact` | `-e` | Show exact token counts instead of compact (K/M) |
-| `--json` | | Output as JSON |
-
-## How it works
-
-`ccost` reads Claude Code's JSONL session logs from `~/.claude/projects/`, including subagent files. It:
-
-1. Parses all `assistant` type entries with token usage
-2. Deduplicates by message ID (keeps max `output_tokens` from streaming)
-3. Normalizes model names (strips date suffixes like `-20250929`)
-4. Calculates costs using [Anthropic's pricing](https://www.anthropic.com/pricing) with 1-hour ephemeral cache rates
-5. Tracks session duration (first to last timestamp per main session file, excluding subagents)
-6. Skips synthetic zero-token entries
-
-## Supported models
-
-| Model | Input | Output | Cache Write | Cache Read |
-|-------|------:|-------:|------------:|-----------:|
-| claude-opus-4-6 | $5.00 | $25.00 | $10.00 | $0.50 |
-| claude-opus-4-5 | $5.00 | $25.00 | $10.00 | $0.50 |
-| claude-sonnet-4-5 | $3.00 | $15.00 | $6.00 | $0.30 |
-| claude-sonnet-4 | $3.00 | $15.00 | $6.00 | $0.30 |
-| claude-haiku-4-5 | $1.00 | $5.00 | $2.00 | $0.10 |
-
-*Prices per 1M tokens. Cache write/read use Claude Code's 1-hour ephemeral cache rates.*
-
-Unknown models show token counts with cost as `N/A` and a warning on stderr.
 
 ## License
 
