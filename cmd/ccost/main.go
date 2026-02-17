@@ -57,7 +57,7 @@ func main() {
 	}
 
 	if sinceStr != "" {
-		t, err := time.Parse("2006-01-02", sinceStr)
+		t, err := time.ParseInLocation("2006-01-02", sinceStr, time.Local)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "invalid --since date: %v\n", err)
 			os.Exit(1)
@@ -66,7 +66,7 @@ func main() {
 	}
 
 	if untilStr != "" {
-		t, err := time.Parse("2006-01-02", untilStr)
+		t, err := time.ParseInLocation("2006-01-02", untilStr, time.Local)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "invalid --until date: %v\n", err)
 			os.Exit(1)

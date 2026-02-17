@@ -177,7 +177,7 @@ func parseTime(s string) (time.Time, bool) {
 			return time.Time{}, false
 		}
 	}
-	return t, true
+	return t.Local(), true
 }
 
 // dayBounds tracks min/max timestamps for a single day.
@@ -289,7 +289,7 @@ func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []s
 	var sessions []Session
 	if isMain && project != "" {
 		for date, b := range days {
-			day, _ := time.Parse("2006-01-02", date)
+			day, _ := time.ParseInLocation("2006-01-02", date, time.Local)
 			if !opts.Since.IsZero() && day.Before(opts.Since) {
 				continue
 			}
