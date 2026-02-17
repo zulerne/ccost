@@ -132,7 +132,7 @@ func Table(w io.Writer, rpt report.Report, keyHeader string, exact bool) {
 
 			tw.AppendRow(table.Row{
 				displayKey,
-				row.Model,
+				strings.TrimPrefix(row.Model, "claude-"),
 				fmtTok(row.Input),
 				fmtTok(row.Output),
 				fmtTok(row.CacheWrite),

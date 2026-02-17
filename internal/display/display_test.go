@@ -205,11 +205,11 @@ func TestTableWithModels(t *testing.T) {
 	if !strings.Contains(strings.ToUpper(out), "MODEL") {
 		t.Error("expected 'MODEL' column header when models are present")
 	}
-	if !strings.Contains(out, "claude-opus-4-6") {
-		t.Error("expected 'claude-opus-4-6' in output")
+	if !strings.Contains(out, "opus-4-6") {
+		t.Error("expected 'opus-4-6' in output")
 	}
-	if !strings.Contains(out, "claude-sonnet-4-5") {
-		t.Error("expected 'claude-sonnet-4-5' in output")
+	if !strings.Contains(out, "sonnet-4-5") {
+		t.Error("expected 'sonnet-4-5' in output")
 	}
 }
 
