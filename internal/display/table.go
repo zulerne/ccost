@@ -68,25 +68,21 @@ func hasModels(rpt report.Report) bool {
 	return false
 }
 
-// commonYear returns the year prefix (e.g. "2026") if all keys share it,
-// or "" if keys span multiple years or aren't date-shaped.
-func commonYear(rows []report.Row) string {
-	if len(rows) == 0 {
-		return ""
+// trimDate removes the "YYYY-" prefix from date-shaped keys.
+// Non-date keys are returned as-is.
+func trimDate(key string) string {
+	if len(key) > 4 && key[4] == '-' {
+		return key[5:]
 	}
-	year := ""
-	for _, row := range rows {
-		if len(row.Key) < 5 || row.Key[4] != '-' {
-			return ""
-		}
-		y := row.Key[:4]
-		if year == "" {
-			year = y
-		} else if y != year {
-			return ""
-		}
+	return key
+}
+
+// yearOf extracts the "YYYY" prefix from a date-shaped key, or "".
+func yearOf(key string) string {
+	if len(key) > 4 && key[4] == '-' {
+		return key[:4]
 	}
-	return year
+	return ""
 }
 
 // Table writes a formatted table to w.
@@ -103,29 +99,29 @@ func Table(w io.Writer, rpt report.Report, keyHeader string, exact bool) {
 
 	showModel := hasModels(rpt)
 
-	// If all dates share the same year, show it in the header and trim from rows.
-	year := commonYear(rpt.Rows)
 	displayHeader := keyHeader
-	if year != "" {
-		displayHeader = keyHeader + " (" + year + ")"
-	}
 
 	if showModel {
-		tw.AppendHeader(table.Row{displayHeader, "Model", "Input", "Output", "Cache Write", "Cache Read", "Time", "Cost"})
+		tw.AppendHeader(table.Row{displayHeader, "Model", "Input", "Output", "Write", "Read", "Time", "Cost"})
 	} else {
-		tw.AppendHeader(table.Row{displayHeader, "Input", "Output", "Cache Write", "Cache Read", "Time", "Cost"})
+		tw.AppendHeader(table.Row{displayHeader, "Input", "Output", "Write", "Read", "Time", "Cost"})
 	}
 
 	if showModel {
 		prevKey := ""
+		prevYear := ""
 		for i, row := range rpt.Rows {
-			displayKey := row.Key
-			if year != "" {
-				displayKey = strings.TrimPrefix(displayKey, year+"-")
+			if y := yearOf(row.Key); y != "" && y != prevYear {
+				if i > 0 {
+					tw.AppendSeparator()
+				}
+				tw.AppendRow(table.Row{y}, table.RowConfig{AutoMerge: true})
+				prevYear = y
 			}
+			displayKey := trimDate(row.Key)
 			if row.Key == prevKey {
 				displayKey = ""
-			} else if i > 0 {
+			} else if i > 0 && yearOf(row.Key) == prevYear {
 				tw.AppendSeparator()
 			}
 			prevKey = row.Key
@@ -142,13 +138,14 @@ func Table(w io.Writer, rpt report.Report, keyHeader string, exact bool) {
 			})
 		}
 	} else {
+		prevYear := ""
 		for _, row := range rpt.Rows {
-			displayKey := row.Key
-			if year != "" {
-				displayKey = strings.TrimPrefix(displayKey, year+"-")
+			if y := yearOf(row.Key); y != "" && y != prevYear {
+				tw.AppendRow(table.Row{y}, table.RowConfig{AutoMerge: true})
+				prevYear = y
 			}
 			tw.AppendRow(table.Row{
-				displayKey,
+				trimDate(row.Key),
 				fmtTok(row.Input),
 				fmtTok(row.Output),
 				fmtTok(row.CacheWrite),
@@ -201,7 +198,35 @@ func Table(w io.Writer, rpt report.Report, keyHeader string, exact bool) {
 	tw.Style().Color.Header = text.Colors{text.FgCyan}
 	tw.Style().Color.Footer = text.Colors{text.FgYellow}
 	tw.Style().Options.DoNotColorBordersAndSeparators = true
-	tw.Style().Options.SeparateRows = true
+
+	isYearRow := func(row table.Row) bool {
+		if len(row) == 0 {
+			return false
+		}
+		s, ok := row[0].(string)
+		return ok && len(s) == 4 && s[0] >= '1' && s[0] <= '9'
+	}
+
+	if showModel {
+		tw.SetRowPainter(func(row table.Row) text.Colors {
+			if isYearRow(row) {
+				return text.Colors{text.FgCyan}
+			}
+			return nil
+		})
+	} else {
+		rowIdx := 0
+		tw.SetRowPainter(func(row table.Row) text.Colors {
+			if isYearRow(row) {
+				return text.Colors{text.FgCyan}
+			}
+			rowIdx++
+			if rowIdx%2 == 0 {
+				return text.Colors{text.Faint}
+			}
+			return nil
+		})
+	}
 
 	tw.Render()
 }
