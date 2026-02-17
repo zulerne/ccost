@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/zulerne/ccost/internal/pricing"
@@ -79,6 +81,17 @@ func Parse(opts Options) ([]Record, []Session, []string, error) {
 	return parseDir(dir, opts)
 }
 
+type fileJob struct {
+	path   string
+	isMain bool
+}
+
+type fileResult struct {
+	records  []Record
+	sessions []Session
+	unknown  []string
+}
+
 func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
 	// Main session files: <project>/<uuid>.jsonl
 	mainPattern := filepath.Join(dir, "*", "*.jsonl")
@@ -91,29 +104,50 @@ func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
 	}
 	subFiles, _ := filepath.Glob(subPattern)
 
+	jobs := make([]fileJob, 0, len(mainFiles)+len(subFiles))
+	for _, f := range mainFiles {
+		jobs = append(jobs, fileJob{path: f, isMain: true})
+	}
+	for _, f := range subFiles {
+		jobs = append(jobs, fileJob{path: f, isMain: false})
+	}
+
+	results := make([]fileResult, len(jobs))
+	workers := runtime.NumCPU()
+	if workers > len(jobs) {
+		workers = len(jobs)
+	}
+
+	var wg sync.WaitGroup
+	ch := make(chan int, len(jobs))
+	for i := range jobs {
+		ch <- i
+	}
+	close(ch)
+
+	for range workers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range ch {
+				records, sessions, unknown, err := parseFile(jobs[i].path, opts, jobs[i].isMain)
+				if err != nil {
+					continue
+				}
+				results[i] = fileResult{records: records, sessions: sessions, unknown: unknown}
+			}
+		}()
+	}
+	wg.Wait()
+
 	var allRecords []Record
 	var allSessions []Session
 	unknownModels := map[string]bool{}
 
-	for _, f := range mainFiles {
-		records, sessions, unknown, err := parseFile(f, opts, true)
-		if err != nil {
-			continue
-		}
-		allRecords = append(allRecords, records...)
-		allSessions = append(allSessions, sessions...)
-		for _, m := range unknown {
-			unknownModels[m] = true
-		}
-	}
-
-	for _, f := range subFiles {
-		records, _, unknown, err := parseFile(f, opts, false)
-		if err != nil {
-			continue
-		}
-		allRecords = append(allRecords, records...)
-		for _, m := range unknown {
+	for _, r := range results {
+		allRecords = append(allRecords, r.records...)
+		allSessions = append(allSessions, r.sessions...)
+		for _, m := range r.unknown {
 			unknownModels[m] = true
 		}
 	}
