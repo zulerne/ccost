@@ -201,6 +201,7 @@ func Table(w io.Writer, rpt report.Report, keyHeader string, exact bool) {
 	tw.Style().Color.Header = text.Colors{text.FgCyan}
 	tw.Style().Color.Footer = text.Colors{text.FgYellow}
 	tw.Style().Options.DoNotColorBordersAndSeparators = true
+	tw.Style().Options.SeparateRows = true
 
 	tw.Render()
 }
