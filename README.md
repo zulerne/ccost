@@ -37,7 +37,7 @@ make build
 ## Usage
 
 ```bash
-ccost                                           # current week (default)
+ccost                                           # last 7 days (default)
 ccost --since 2026-02-01 --until 2026-02-07     # custom date range
 ccost --project myapp                           # filter by project
 ccost --by-project                              # group by project

@@ -48,12 +48,8 @@ func main() {
 
 	if weeklyMode {
 		now := time.Now()
-		weekday := now.Weekday()
-		if weekday == time.Sunday {
-			weekday = 7
-		}
-		monday := now.AddDate(0, 0, -int(weekday-time.Monday))
-		opts.Since = time.Date(monday.Year(), monday.Month(), monday.Day(), 0, 0, 0, 0, now.Location())
+		sevenDaysAgo := now.AddDate(0, 0, -6)
+		opts.Since = time.Date(sevenDaysAgo.Year(), sevenDaysAgo.Month(), sevenDaysAgo.Day(), 0, 0, 0, 0, now.Location())
 	}
 
 	if sinceStr != "" {
@@ -98,11 +94,7 @@ func main() {
 	var title string
 	if weeklyMode {
 		now := time.Now()
-		sun := opts.Since.AddDate(0, 0, 6)
-		if sun.After(now) {
-			sun = now
-		}
-		title = fmt.Sprintf("Weekly · %s – %s", opts.Since.Format("Jan 02"), sun.Format("Jan 02"))
+		title = fmt.Sprintf("Weekly · %s – %s", opts.Since.Format("Jan 02"), now.Format("Jan 02"))
 	} else if sinceStr != "" && untilStr != "" {
 		title = fmt.Sprintf("Range · %s – %s", opts.Since.Format("Jan 02"), opts.Until.Format("Jan 02"))
 	} else if sinceStr != "" {
