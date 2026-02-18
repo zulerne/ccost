@@ -219,6 +219,7 @@ func Table(w io.Writer, rpt report.Report, keyHeader string, exact bool, title s
 	tw.SetColumnConfigs(colConfigs)
 
 	tw.SetStyle(table.StyleRounded)
+	tw.Style().Format.Footer = text.FormatDefault
 	tw.Style().Color.Header = text.Colors{text.FgCyan}
 	tw.Style().Color.Footer = text.Colors{text.FgYellow}
 	tw.Style().Options.DoNotColorBordersAndSeparators = true
