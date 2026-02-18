@@ -113,10 +113,7 @@ func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
 	}
 
 	results := make([]fileResult, len(jobs))
-	workers := runtime.NumCPU()
-	if workers > len(jobs) {
-		workers = len(jobs)
-	}
+	workers := min(runtime.NumCPU(), len(jobs))
 
 	var wg sync.WaitGroup
 	ch := make(chan int, len(jobs))
@@ -126,9 +123,7 @@ func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
 	close(ch)
 
 	for range workers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for i := range ch {
 				records, sessions, unknown, err := parseFile(jobs[i].path, opts, jobs[i].isMain)
 				if err != nil {
@@ -136,7 +131,7 @@ func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
 				}
 				results[i] = fileResult{records: records, sessions: sessions, unknown: unknown}
 			}
-		}()
+		})
 	}
 	wg.Wait()
 

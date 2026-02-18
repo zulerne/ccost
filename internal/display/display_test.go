@@ -73,22 +73,22 @@ func TestJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
 	}
 
-	rows, ok := result["rows"].([]interface{})
+	rows, ok := result["rows"].([]any)
 	if !ok || len(rows) != 1 {
 		t.Fatalf("expected 1 row, got %v", result["rows"])
 	}
 
-	row := rows[0].(map[string]interface{})
+	row := rows[0].(map[string]any)
 	if row["duration_seconds"] != float64(8100) {
 		t.Errorf("expected duration_seconds 8100, got %v", row["duration_seconds"])
 	}
 
-	total, ok := result["total"].(map[string]interface{})
+	total, ok := result["total"].(map[string]any)
 	if !ok {
 		t.Fatal("expected total object")
 	}
