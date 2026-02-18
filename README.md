@@ -1,6 +1,7 @@
 # ccost
 
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](https://go.dev)
+[![Go Report Card](https://goreportcard.com/badge/github.com/zulerne/ccost)](https://goreportcard.com/report/github.com/zulerne/ccost)
 [![Code Size](https://img.shields.io/github/languages/code-size/zulerne/ccost)](https://github.com/zulerne/ccost)
 [![Release](https://img.shields.io/github/v/release/zulerne/ccost)](https://github.com/zulerne/ccost/releases)
 
