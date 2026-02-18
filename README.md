@@ -5,11 +5,9 @@
 [![Code Size](https://img.shields.io/github/languages/code-size/zulerne/ccost)](https://github.com/zulerne/ccost)
 [![Release](https://img.shields.io/github/v/release/zulerne/ccost)](https://github.com/zulerne/ccost/releases)
 
-A minimalistic CLI tool to analyze [Claude Code](https://claude.com/claude-code) token usage, costs, and session time.
+A CLI tool to analyze [Claude Code](https://claude.com/claude-code) token usage, costs, and session time.
 
-Built with Go as a single binary — no runtime dependencies, no network access. Just reads your local JSONL session logs.
-
-Alternative to [ccusage](https://github.com/ryoppippi/ccusage).
+Reads local JSONL session logs. No network access. Alternative to [ccusage](https://github.com/ryoppippi/ccusage).
 
 ![demo](demo.gif)
 
