@@ -3,6 +3,7 @@ package parser
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -236,5 +237,141 @@ func TestSessionFilteredByDate(t *testing.T) {
 	// Session ends before Since, so it should be excluded.
 	if len(sessions) != 0 {
 		t.Errorf("expected 0 sessions (filtered by since), got %d", len(sessions))
+	}
+}
+
+func TestDisambiguateProjects(t *testing.T) {
+	dir := t.TempDir()
+
+	proj1Dir := filepath.Join(dir, "proj-abc")
+	proj2Dir := filepath.Join(dir, "proj-xyz")
+
+	data1 := `{"type":"assistant","timestamp":"2026-02-14T10:00:00.000Z","cwd":"/home/user/toogly/backend","message":{"id":"msg_001","model":"claude-opus-4-6","usage":{"input_tokens":100,"output_tokens":50,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}
+`
+	data2 := `{"type":"assistant","timestamp":"2026-02-14T11:00:00.000Z","cwd":"/home/user/my_game/backend","message":{"id":"msg_002","model":"claude-opus-4-6","usage":{"input_tokens":200,"output_tokens":100,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}
+`
+
+	for _, d := range []string{proj1Dir, proj2Dir} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(proj1Dir, "s1.jsonl"), []byte(data1), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(proj2Dir, "s2.jsonl"), []byte(data2), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	records, _, _, err := parseDir(dir, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(records) != 2 {
+		t.Fatalf("expected 2 records, got %d", len(records))
+	}
+
+	projects := map[string]bool{}
+	for _, r := range records {
+		projects[r.Project] = true
+	}
+	if len(projects) != 2 {
+		t.Errorf("expected 2 distinct projects, got %v", projects)
+	}
+	for name := range projects {
+		if name == "backend" {
+			t.Errorf("expected disambiguated name, got plain 'backend'")
+		}
+		if !strings.HasSuffix(name, "/backend") {
+			t.Errorf("expected name ending with '/backend', got %q", name)
+		}
+	}
+}
+
+func TestFilterDisambiguatedProject(t *testing.T) {
+	dir := t.TempDir()
+
+	proj1Dir := filepath.Join(dir, "proj-abc")
+	proj2Dir := filepath.Join(dir, "proj-xyz")
+
+	data1 := `{"type":"assistant","timestamp":"2026-02-14T10:00:00.000Z","cwd":"/home/user/toogly/backend","message":{"id":"msg_001","model":"claude-opus-4-6","usage":{"input_tokens":100,"output_tokens":50,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}
+`
+	data2 := `{"type":"assistant","timestamp":"2026-02-14T11:00:00.000Z","cwd":"/home/user/my_game/backend","message":{"id":"msg_002","model":"claude-opus-4-6","usage":{"input_tokens":200,"output_tokens":100,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}
+`
+
+	for _, d := range []string{proj1Dir, proj2Dir} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(proj1Dir, "s1.jsonl"), []byte(data1), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(proj2Dir, "s2.jsonl"), []byte(data2), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Filter "toogly" should match only toogly/backend.
+	records, _, _, err := parseDir(dir, Options{Project: "toogly"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(records) != 1 {
+		t.Fatalf("expected 1 record matching 'toogly', got %d", len(records))
+	}
+	if records[0].Input != 100 {
+		t.Errorf("expected input=100 (toogly), got %d", records[0].Input)
+	}
+
+	// Filter "backend" should match both.
+	records, _, _, err = parseDir(dir, Options{Project: "backend"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(records) != 2 {
+		t.Errorf("expected 2 records matching 'backend', got %d", len(records))
+	}
+}
+
+func TestLastNComponents(t *testing.T) {
+	tests := []struct {
+		path string
+		n    int
+		want string
+	}{
+		{"/home/user/toogly/backend", 1, "backend"},
+		{"/home/user/toogly/backend", 2, "toogly/backend"},
+		{"/home/user/toogly/backend", 3, "user/toogly/backend"},
+		{"/home/user/toogly/backend", 100, "/home/user/toogly/backend"},
+	}
+	for _, tt := range tests {
+		got := lastNComponents(tt.path, tt.n)
+		if got != tt.want {
+			t.Errorf("lastNComponents(%q, %d) = %q, want %q", tt.path, tt.n, got, tt.want)
+		}
+	}
+}
+
+func TestDisambiguateProjectsUnit(t *testing.T) {
+	cwdsByBase := map[string]map[string]bool{
+		"backend": {
+			"/home/user/toogly/backend":  true,
+			"/home/user/my_game/backend": true,
+		},
+		"ccost": {
+			"/home/user/go/ccost": true,
+		},
+	}
+
+	result := disambiguateProjects(cwdsByBase)
+
+	if result["/home/user/go/ccost"] != "ccost" {
+		t.Errorf("expected 'ccost', got %q", result["/home/user/go/ccost"])
+	}
+	if result["/home/user/toogly/backend"] != "toogly/backend" {
+		t.Errorf("expected 'toogly/backend', got %q", result["/home/user/toogly/backend"])
+	}
+	if result["/home/user/my_game/backend"] != "my_game/backend" {
+		t.Errorf("expected 'my_game/backend', got %q", result["/home/user/my_game/backend"])
 	}
 }

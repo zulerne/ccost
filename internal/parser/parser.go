@@ -90,6 +90,7 @@ type fileResult struct {
 	records  []Record
 	sessions []Session
 	unknown  []string
+	cwd      string // full CWD path for project disambiguation
 }
 
 func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
@@ -125,21 +126,49 @@ func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
 	for range workers {
 		wg.Go(func() {
 			for i := range ch {
-				records, sessions, unknown, err := parseFile(jobs[i].path, opts, jobs[i].isMain)
+				records, sessions, unknown, cwd, err := parseFile(jobs[i].path, opts, jobs[i].isMain)
 				if err != nil {
 					continue
 				}
-				results[i] = fileResult{records: records, sessions: sessions, unknown: unknown}
+				results[i] = fileResult{records: records, sessions: sessions, unknown: unknown, cwd: cwd}
 			}
 		})
 	}
 	wg.Wait()
 
+	// Build baseName → set of unique full CWDs for disambiguation.
+	cwdsByBase := map[string]map[string]bool{}
+	for _, r := range results {
+		if r.cwd == "" {
+			continue
+		}
+		base := filepath.Base(r.cwd)
+		if cwdsByBase[base] == nil {
+			cwdsByBase[base] = map[string]bool{}
+		}
+		cwdsByBase[base][r.cwd] = true
+	}
+	displayNames := disambiguateProjects(cwdsByBase)
+
+	// Merge results: rewrite project names and apply project filter.
 	var allRecords []Record
 	var allSessions []Session
 	unknownModels := map[string]bool{}
 
 	for _, r := range results {
+		name := displayNames[r.cwd] // empty for files with no CWD
+
+		if opts.Project != "" && !strings.Contains(strings.ToLower(name), strings.ToLower(opts.Project)) {
+			continue
+		}
+
+		for i := range r.records {
+			r.records[i].Project = name
+		}
+		for i := range r.sessions {
+			r.sessions[i].Project = name
+		}
+
 		allRecords = append(allRecords, r.records...)
 		allSessions = append(allSessions, r.sessions...)
 		for _, m := range r.unknown {
@@ -180,10 +209,10 @@ type dayBounds struct {
 	min, max time.Time
 }
 
-func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []string, error) {
+func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []string, string, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, "", err
 	}
 	defer f.Close()
 
@@ -191,6 +220,7 @@ func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []s
 	// Also track min/max timestamps per day for session duration (main files only).
 	best := map[string]Entry{}
 	var project string
+	var fullCWD string
 	days := map[string]*dayBounds{} // date string → bounds
 
 	scanner := bufio.NewScanner(f)
@@ -202,8 +232,9 @@ func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []s
 		}
 
 		// Extract project from any entry with CWD.
-		if project == "" && e.CWD != "" {
-			project = filepath.Base(e.CWD)
+		if fullCWD == "" && e.CWD != "" {
+			fullCWD = filepath.Clean(e.CWD)
+			project = filepath.Base(fullCWD)
 		}
 
 		// Track timestamps per day for session duration.
@@ -237,9 +268,7 @@ func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []s
 		}
 	}
 
-	if opts.Project != "" && !strings.Contains(strings.ToLower(project), strings.ToLower(opts.Project)) {
-		return nil, nil, nil, nil
-	}
+
 
 	var records []Record
 	unknownModels := map[string]bool{}
@@ -304,5 +333,68 @@ func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []s
 		warnings = append(warnings, m)
 	}
 
-	return records, sessions, warnings, nil
+	return records, sessions, warnings, fullCWD, nil
+}
+
+// disambiguateProjects resolves collisions where multiple CWDs share the same
+// filepath.Base() name. For unique base names, the base name is used. For
+// collisions, parent path components are added until names are unique.
+func disambiguateProjects(cwdsByBase map[string]map[string]bool) map[string]string {
+	result := make(map[string]string)
+
+	for base, cwds := range cwdsByBase {
+		if len(cwds) == 1 {
+			for cwd := range cwds {
+				result[cwd] = base
+			}
+			continue
+		}
+
+		// Collision: progressively add parent components until unique.
+		cwdList := make([]string, 0, len(cwds))
+		for cwd := range cwds {
+			cwdList = append(cwdList, cwd)
+		}
+
+		for depth := 2; depth <= 20; depth++ {
+			names := make(map[string][]string) // candidate name → CWDs
+			for _, cwd := range cwdList {
+				name := lastNComponents(cwd, depth)
+				names[name] = append(names[name], cwd)
+			}
+
+			allUnique := true
+			for _, group := range names {
+				if len(group) > 1 {
+					allUnique = false
+					break
+				}
+			}
+
+			if allUnique {
+				for name, group := range names {
+					result[group[0]] = name
+				}
+				break
+			}
+
+			if depth == 20 {
+				for _, cwd := range cwdList {
+					result[cwd] = cwd
+				}
+			}
+		}
+	}
+
+	return result
+}
+
+// lastNComponents returns the last n path components joined with "/".
+func lastNComponents(p string, n int) string {
+	p = filepath.Clean(p)
+	parts := strings.Split(p, string(filepath.Separator))
+	if n >= len(parts) {
+		return strings.Join(parts, "/")
+	}
+	return strings.Join(parts[len(parts)-n:], "/")
 }
