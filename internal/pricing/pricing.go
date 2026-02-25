@@ -6,7 +6,7 @@ import "regexp"
 type ModelPricing struct {
 	Input      float64
 	Output     float64
-	CacheWrite float64 // 5-minute ephemeral cache write
+	CacheWrite float64 // 1-hour ephemeral cache write
 	CacheRead  float64
 }
 

@@ -2,3 +2,4 @@
 dist/
 demo.tape
 record-demo.sh
+.idea/
