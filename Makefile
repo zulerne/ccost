@@ -12,7 +12,7 @@ lint:
 	go vet ./...
 
 fmt:
-	gofmt -w .
+	go fmt ./...
 
 run:
 	go run ./cmd/ccost
