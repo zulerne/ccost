@@ -91,6 +91,7 @@ type fileResult struct {
 	sessions []Session
 	unknown  []string
 	cwd      string // full CWD path for project disambiguation
+	err      error  // non-nil if parseFile failed
 }
 
 func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
@@ -103,6 +104,7 @@ func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	// Pattern is hardcoded; filepath.Glob only errors on malformed patterns.
 	subFiles, _ := filepath.Glob(subPattern)
 
 	jobs := make([]fileJob, 0, len(mainFiles)+len(subFiles))
@@ -128,6 +130,7 @@ func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
 			for i := range ch {
 				records, sessions, unknown, cwd, err := parseFile(jobs[i].path, opts, jobs[i].isMain)
 				if err != nil {
+					results[i] = fileResult{err: err}
 					continue
 				}
 				results[i] = fileResult{records: records, sessions: sessions, unknown: unknown, cwd: cwd}
@@ -153,9 +156,14 @@ func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
 	// Merge results: rewrite project names and apply project filter.
 	var allRecords []Record
 	var allSessions []Session
+	var fileErrors []string
 	unknownModels := map[string]bool{}
 
 	for _, r := range results {
+		if r.err != nil {
+			fileErrors = append(fileErrors, "skipped file: "+r.err.Error())
+			continue
+		}
 		name := displayNames[r.cwd] // empty for files with no CWD
 
 		if opts.Project != "" && !strings.Contains(strings.ToLower(name), strings.ToLower(opts.Project)) {
@@ -184,11 +192,13 @@ func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
 		return allSessions[i].Date < allSessions[j].Date
 	})
 
+	sort.Strings(fileErrors)
 	var warnings []string
+	warnings = append(warnings, fileErrors...)
 	for m := range unknownModels {
 		warnings = append(warnings, "unknown model: "+m)
 	}
-	sort.Strings(warnings)
+	sort.Strings(warnings[len(fileErrors):])
 
 	return allRecords, allSessions, warnings, nil
 }
@@ -267,8 +277,9 @@ func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []s
 			best[e.Message.ID] = e
 		}
 	}
-
-
+	if err := scanner.Err(); err != nil {
+		return nil, nil, nil, "", err
+	}
 
 	var records []Record
 	unknownModels := map[string]bool{}
