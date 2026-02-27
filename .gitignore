@@ -3,3 +3,5 @@ dist/
 demo.tape
 record-demo.sh
 .idea/
+.DS_Store
+coverage.out

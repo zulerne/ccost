@@ -34,3 +34,16 @@ checksum:
 
 changelog:
   sort: asc
+  filters:
+    exclude:
+      - "^chore:"
+      - "^docs:"
+      - "^ci:"
+      - "^test:"
+  groups:
+    - title: Bug Fixes
+      regexp: "^fix:"
+    - title: Features
+      regexp: "^feat:"
+    - title: Other
+      regexp: ".*"
