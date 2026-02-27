@@ -13,18 +13,18 @@ type ModelPricing struct {
 // Source: https://platform.claude.com/docs/en/about-claude/pricing
 // Claude Code uses 1-hour ephemeral cache: write = 2x input, read = 0.1x input
 var models = map[string]ModelPricing{
-	"claude-opus-4-6": {Input: 5.0, Output: 25.0, CacheWrite: 10.0, CacheRead: 0.50},
-	"claude-opus-4-5": {Input: 5.0, Output: 25.0, CacheWrite: 10.0, CacheRead: 0.50},
-	"claude-opus-4-1": {Input: 15.0, Output: 75.0, CacheWrite: 30.0, CacheRead: 1.50},
-	"claude-opus-4":   {Input: 15.0, Output: 75.0, CacheWrite: 30.0, CacheRead: 1.50},
+	"claude-opus-4-6":   {Input: 5.0, Output: 25.0, CacheWrite: 10.0, CacheRead: 0.50},
+	"claude-opus-4-5":   {Input: 5.0, Output: 25.0, CacheWrite: 10.0, CacheRead: 0.50},
+	"claude-opus-4-1":   {Input: 15.0, Output: 75.0, CacheWrite: 30.0, CacheRead: 1.50},
+	"claude-opus-4":     {Input: 15.0, Output: 75.0, CacheWrite: 30.0, CacheRead: 1.50},
 	"claude-sonnet-4-6": {Input: 3.0, Output: 15.0, CacheWrite: 6.0, CacheRead: 0.30},
 	"claude-sonnet-4-5": {Input: 3.0, Output: 15.0, CacheWrite: 6.0, CacheRead: 0.30},
 	"claude-sonnet-4":   {Input: 3.0, Output: 15.0, CacheWrite: 6.0, CacheRead: 0.30},
 	"claude-sonnet-3-7": {Input: 3.0, Output: 15.0, CacheWrite: 6.0, CacheRead: 0.30},
-	"claude-haiku-4-5": {Input: 1.0, Output: 5.0, CacheWrite: 2.0, CacheRead: 0.10},
-	"claude-haiku-3-5": {Input: 0.80, Output: 4.0, CacheWrite: 1.60, CacheRead: 0.08},
-	"claude-opus-3":    {Input: 15.0, Output: 75.0, CacheWrite: 30.0, CacheRead: 1.50},
-	"claude-haiku-3":   {Input: 0.25, Output: 1.25, CacheWrite: 0.50, CacheRead: 0.03},
+	"claude-haiku-4-5":  {Input: 1.0, Output: 5.0, CacheWrite: 2.0, CacheRead: 0.10},
+	"claude-haiku-3-5":  {Input: 0.80, Output: 4.0, CacheWrite: 1.60, CacheRead: 0.08},
+	"claude-opus-3":     {Input: 15.0, Output: 75.0, CacheWrite: 30.0, CacheRead: 1.50},
+	"claude-haiku-3":    {Input: 0.25, Output: 1.25, CacheWrite: 0.50, CacheRead: 0.03},
 }
 
 var dateSuffix = regexp.MustCompile(`-\d{8}$`)
