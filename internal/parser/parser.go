@@ -153,8 +153,9 @@ func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
 	}
 	displayNames := disambiguateProjects(cwdsByBase)
 
-	// Merge results: rewrite project names and apply project filter.
+	// Merge results: apply disambiguated project names and project filter.
 	var allRecords []Record
+	projectFilter := strings.ToLower(opts.Project)
 	var allSessions []Session
 	var fileErrors []string
 	unknownModels := map[string]bool{}
@@ -166,7 +167,7 @@ func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
 		}
 		name := displayNames[r.cwd] // empty for files with no CWD
 
-		if opts.Project != "" && !strings.Contains(strings.ToLower(name), strings.ToLower(opts.Project)) {
+		if projectFilter != "" && !strings.Contains(strings.ToLower(name), projectFilter) {
 			continue
 		}
 
@@ -229,7 +230,6 @@ func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []s
 	// First pass: collect entries, deduplicate by message.id (keep max output_tokens).
 	// Also track min/max timestamps per day for session duration (main files only).
 	best := map[string]Entry{}
-	var project string
 	var fullCWD string
 	days := map[string]*dayBounds{} // date string → bounds
 
@@ -244,7 +244,6 @@ func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []s
 		// Extract project from any entry with CWD.
 		if fullCWD == "" && e.CWD != "" {
 			fullCWD = filepath.Clean(e.CWD)
-			project = filepath.Base(fullCWD)
 		}
 
 		// Track timestamps per day for session duration.
@@ -312,7 +311,6 @@ func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []s
 		records = append(records, Record{
 			Time:       t,
 			Model:      normalized,
-			Project:    project,
 			Input:      e.Message.Usage.InputTokens,
 			Output:     e.Message.Usage.OutputTokens,
 			CacheWrite: e.Message.Usage.CacheCreationInputTokens,
@@ -322,7 +320,7 @@ func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []s
 
 	// Build per-day sessions for main files.
 	var sessions []Session
-	if isMain && project != "" {
+	if isMain && fullCWD != "" {
 		for date, b := range days {
 			day, _ := time.ParseInLocation("2006-01-02", date, time.Local)
 			if !opts.Since.IsZero() && day.Before(opts.Since) {
@@ -333,7 +331,6 @@ func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []s
 			}
 			sessions = append(sessions, Session{
 				Date:     date,
-				Project:  project,
 				Duration: b.max.Sub(b.min),
 			})
 		}
