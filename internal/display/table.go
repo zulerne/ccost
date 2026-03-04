@@ -21,7 +21,7 @@ func formatNum(n int) string {
 		if i > 0 && (len(s)-i)%3 == 0 {
 			result = append(result, ',')
 		}
-		result = append(result, byte(c))
+		result = append(result, byte(c)) //nolint:gosec // G115: c is always an ASCII digit
 	}
 	return string(result)
 }
@@ -59,7 +59,7 @@ func formatDuration(d time.Duration) string {
 	return fmt.Sprintf("%dh%02dm", h, m)
 }
 
-func hasModels(rpt report.Report) bool {
+func hasModels(rpt *report.Report) bool {
 	for _, row := range rpt.Rows {
 		if row.Model != "" {
 			return true
@@ -94,7 +94,7 @@ func yearOf(key string) string {
 // Table writes a formatted table to w.
 // When exact is true, token counts are shown as full numbers (1,234,567);
 // otherwise they use compact notation (1.2M, 34.5K).
-func Table(w io.Writer, rpt report.Report, keyHeader string, exact bool, title string) {
+func Table(w io.Writer, rpt *report.Report, keyHeader string, exact bool, title string) {
 	fmtTok := formatCompact
 	if exact {
 		fmtTok = formatNum

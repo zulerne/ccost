@@ -32,7 +32,7 @@ func roundCost(c float64) float64 {
 }
 
 // JSON writes the report as JSON to w.
-func JSON(w io.Writer, rpt report.Report) error {
+func JSON(w io.Writer, rpt *report.Report) error {
 	jr := jsonReport{
 		Rows: make([]jsonRow, len(rpt.Rows)),
 		Total: jsonRow{

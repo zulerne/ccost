@@ -92,14 +92,15 @@ func main() {
 		keyHeader = "Project"
 	}
 	var title string
-	if weeklyMode {
+	switch {
+	case weeklyMode:
 		now := time.Now()
 		title = fmt.Sprintf("Weekly · %s – %s", opts.Since.Format("Jan 02"), now.Format("Jan 02"))
-	} else if sinceStr != "" && untilStr != "" {
+	case sinceStr != "" && untilStr != "":
 		title = fmt.Sprintf("Range · %s – %s", opts.Since.Format("Jan 02"), opts.Until.Format("Jan 02"))
-	} else if sinceStr != "" {
+	case sinceStr != "":
 		title = fmt.Sprintf("Since · %s", opts.Since.Format("Jan 02"))
-	} else if untilStr != "" {
+	case untilStr != "":
 		title = fmt.Sprintf("Until · %s", opts.Until.Format("Jan 02"))
 	}
 	if byProject {
@@ -117,11 +118,11 @@ func main() {
 	}
 
 	if jsonOut {
-		if err := display.JSON(os.Stdout, rpt); err != nil {
+		if err := display.JSON(os.Stdout, &rpt); err != nil {
 			fmt.Fprintf(os.Stderr, "error writing JSON: %v\n", err)
 			os.Exit(1)
 		}
 	} else {
-		display.Table(os.Stdout, rpt, keyHeader, exact, title)
+		display.Table(os.Stdout, &rpt, keyHeader, exact, title)
 	}
 }

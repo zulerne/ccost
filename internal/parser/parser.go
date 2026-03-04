@@ -220,12 +220,12 @@ type dayBounds struct {
 	min, max time.Time
 }
 
-func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []string, string, error) {
-	f, err := os.Open(path)
+func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []string, string, error) { //nolint:gocritic // unnamedResult: 5 returns is intentional for this internal function
+	f, err := os.Open(path) //nolint:gosec // G304: path comes from trusted local log directory
 	if err != nil {
 		return nil, nil, nil, "", err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	// First pass: collect entries, deduplicate by message.id (keep max output_tokens).
 	// Also track min/max timestamps per day for session duration (main files only).
