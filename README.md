@@ -1,7 +1,7 @@
 # ccost
 
 [![CI](https://github.com/zulerne/ccost/actions/workflows/ci.yml/badge.svg)](https://github.com/zulerne/ccost/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/zulerne/ccost/graph/badge.svg)](https://app.codecov.io/gh/zulerne/ccost)
+[![codecov](https://codecov.io/gh/zulerne/ccost/graph/badge.svg?token=KMKEA9GGBO)](https://codecov.io/gh/zulerne/ccost)
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![Go Report Card](https://goreportcard.com/badge/github.com/zulerne/ccost)](https://goreportcard.com/report/github.com/zulerne/ccost)
 [![Code Size](https://img.shields.io/github/languages/code-size/zulerne/ccost)](https://github.com/zulerne/ccost)
