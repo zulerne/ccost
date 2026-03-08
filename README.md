@@ -1,7 +1,7 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="ccost-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="ccost-light.svg">
-  <img alt="ccost" src="ccost-dark.svg" width="480">
+  <img alt="ccost" src="ccost-dark.svg" width="720">
 </picture>
 
 [![CI](https://github.com/zulerne/ccost/actions/workflows/ci.yml/badge.svg)](https://github.com/zulerne/ccost/actions/workflows/ci.yml)
