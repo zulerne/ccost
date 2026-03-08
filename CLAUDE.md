@@ -56,7 +56,7 @@ Required repository secrets: `GITHUB_TOKEN` (automatic), `HOMEBREW_TAP_GITHUB_TO
 
 ## Code Quality
 
-Always run `make lint` before committing. Run `make check` (lint + test) for full validation.
+Always run `task lint` before committing. Run `task check` (lint + test) for full validation.
 
 ## Workflow
 

@@ -99,9 +99,9 @@ func main() {
 	case sinceStr != "" && untilStr != "":
 		title = fmt.Sprintf("Range · %s – %s", opts.Since.Format("Jan 02"), opts.Until.Format("Jan 02"))
 	case sinceStr != "":
-		title = fmt.Sprintf("Since · %s", opts.Since.Format("Jan 02"))
+		title = "Since · " + opts.Since.Format("Jan 02")
 	case untilStr != "":
-		title = fmt.Sprintf("Until · %s", opts.Until.Format("Jan 02"))
+		title = "Until · " + opts.Until.Format("Jan 02")
 	}
 	if byProject {
 		if models {

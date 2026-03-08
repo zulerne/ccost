@@ -19,9 +19,17 @@ linters:
     - gocritic
     - prealloc
     - unconvert
+    - copyloopvar    # catches unsafe loop variable captures
+    - intrange       # suggests for i := range n
+    - modernize      # suggests newer Go idioms
+    - nolintlint     # validates //nolint directives
+    - perfsprint     # faster alternatives to fmt.Sprintf
+    - unparam        # detects unused function parameters
     # Error handling
-    - wrapcheck
     - errorlint
+    # - wrapcheck      # requires wrapping all errors from external packages
+    # - usetesting     # enforces modern testing patterns (Go 1.24+)
+    # - exptostd       # flags x/exp functions now available in stdlib
   settings:
     govet:
       enable:
@@ -39,11 +47,17 @@ linters:
           disabled: true
         - name: package-comments
           disabled: true
+    nolintlint:
+      require-explanation: true
+      require-specific: true
   exclusions:
+    presets:
+      - comments
+      - std-error-handling
+      - common-false-positives
     rules:
       - path: _test\.go
         linters:
           - goconst
           - gosec
           - gocritic
-          - wrapcheck

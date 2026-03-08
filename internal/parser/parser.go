@@ -224,7 +224,7 @@ type dayBounds struct {
 }
 
 func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []string, string, error) { //nolint:gocritic // unnamedResult: 5 returns is intentional for this internal function
-	f, err := os.Open(path) //nolint:gosec // G304: path comes from trusted local log directory
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, nil, nil, "", fmt.Errorf("opening log file: %w", err)
 	}

@@ -1,0 +1,42 @@
+version: "3"
+
+vars:
+  VERSION:
+    sh: git describe --tags --always --dirty
+
+tasks:
+  run:
+    desc: Run the application
+    cmd: go run ./cmd/ccost
+
+  build:
+    desc: Build the binary
+    cmd: go build -ldflags "-X main.version={{.VERSION}}" -o ccost ./cmd/ccost
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -f ccost
+      - rm -f coverage.out
+
+  test:
+    desc: Run tests
+    cmd: go test -race ./...
+
+  lint:
+    desc: Run golangci-lint
+    cmd: golangci-lint run
+
+  fmt:
+    desc: Format code
+    cmd: go fmt ./...
+
+  check:
+    desc: Run all checks (lint + test)
+    deps: [lint, test]
+
+  coverage:
+    desc: Run tests with coverage
+    cmds:
+      - go test -race -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out

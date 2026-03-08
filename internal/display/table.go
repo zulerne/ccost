@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,7 +17,7 @@ func formatNum(n int) string {
 	if n == 0 {
 		return "0"
 	}
-	s := fmt.Sprintf("%d", n)
+	s := strconv.Itoa(n)
 	var result []byte
 	for i, c := range s {
 		if i > 0 && (len(s)-i)%3 == 0 {
@@ -40,7 +41,7 @@ func formatCompact(n int) string {
 		s = strings.TrimRight(s, ".")
 		return s + "K"
 	default:
-		return fmt.Sprintf("%d", n)
+		return strconv.Itoa(n)
 	}
 }
 
