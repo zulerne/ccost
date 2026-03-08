@@ -1,0 +1,46 @@
+name: Bug Report
+description: Report a bug in ccost
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened? What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to reproduce the issue.
+      placeholder: |
+        1. Run `ccost --since ...`
+        2. See error ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: Paste the relevant terminal output.
+      render: shell
+
+  - type: input
+    id: version
+    attributes:
+      label: ccost version
+      description: Output of `ccost --version`.
+      placeholder: "0.9.0"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: "macOS 15.4 / Ubuntu 24.04"
+    validations:
+      required: true

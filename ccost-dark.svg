@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 200" fill="none">
+  <defs>
+    <linearGradient id="costGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0b866"/>
+      <stop offset="100%" style="stop-color:#e08a3e"/>
+    </linearGradient>
+    <linearGradient id="barGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#e08a3e"/>
+      <stop offset="60%" style="stop-color:#f0b866"/>
+      <stop offset="100%" style="stop-color:#f0d866"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="720" height="200" rx="16" fill="#1a1b26"/>
+  
+  <!-- Subtle grid dots -->
+  <g opacity="0.07">
+    <circle cx="40" cy="40" r="1.2" fill="#f0b866"/>
+    <circle cx="80" cy="40" r="1.2" fill="#f0b866"/>
+    <circle cx="120" cy="40" r="1.2" fill="#f0b866"/>
+    <circle cx="160" cy="40" r="1.2" fill="#f0b866"/>
+    <circle cx="200" cy="40" r="1.2" fill="#f0b866"/>
+    <circle cx="40" cy="80" r="1.2" fill="#f0b866"/>
+    <circle cx="80" cy="80" r="1.2" fill="#f0b866"/>
+    <circle cx="40" cy="120" r="1.2" fill="#f0b866"/>
+    <circle cx="80" cy="120" r="1.2" fill="#f0b866"/>
+    <circle cx="120" cy="120" r="1.2" fill="#f0b866"/>
+    <circle cx="40" cy="160" r="1.2" fill="#f0b866"/>
+    <circle cx="600" cy="40" r="1.2" fill="#f0b866"/>
+    <circle cx="640" cy="40" r="1.2" fill="#f0b866"/>
+    <circle cx="680" cy="40" r="1.2" fill="#f0b866"/>
+    <circle cx="640" cy="80" r="1.2" fill="#f0b866"/>
+    <circle cx="680" cy="80" r="1.2" fill="#f0b866"/>
+    <circle cx="680" cy="120" r="1.2" fill="#f0b866"/>
+    <circle cx="640" cy="120" r="1.2" fill="#f0b866"/>
+    <circle cx="600" cy="120" r="1.2" fill="#f0b866"/>
+    <circle cx="680" cy="160" r="1.2" fill="#f0b866"/>
+    <circle cx="640" cy="160" r="1.2" fill="#f0b866"/>
+  </g>
+
+  <!-- Token meter icon -->
+  <g transform="translate(195, 52)">
+    <!-- Meter arc (outer) -->
+    <path d="M8 70 A30 30 0 0 1 56 70" stroke="#3a3d52" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <!-- Meter arc (filled portion) -->
+    <path d="M8 70 A30 30 0 0 1 48 46" stroke="url(#barGrad)" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <!-- Needle -->
+    <line x1="32" y1="68" x2="44" y2="50" stroke="#f0b866" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Center dot -->
+    <circle cx="32" cy="68" r="3.5" fill="#e08a3e"/>
+    <!-- Dollar sign below -->
+    <text x="32" y="92" font-family="'SF Mono', 'Fira Code', 'JetBrains Mono', monospace" font-size="16" font-weight="700" fill="#f0b866" text-anchor="middle" opacity="0.7">$</text>
+  </g>
+  
+  <!-- "ccost" text -->
+  <text x="268" y="115" font-family="'SF Mono', 'Fira Code', 'JetBrains Mono', 'Cascadia Code', Consolas, monospace" font-size="56" font-weight="700" letter-spacing="-1" fill="#e0e0e0">
+    c<tspan fill="url(#costGrad)">cost</tspan>
+  </text>
+  
+  <!-- Tagline -->
+  <text x="270" y="145" font-family="'SF Mono', 'Fira Code', 'JetBrains Mono', 'Cascadia Code', Consolas, monospace" font-size="14" fill="#8b8fa3" letter-spacing="0.5">
+    Claude Code usage / costs / time
+  </text>
+</svg>
