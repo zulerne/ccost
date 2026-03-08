@@ -3,6 +3,7 @@ package display
 import (
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"time"
 
@@ -59,15 +60,6 @@ func formatDuration(d time.Duration) string {
 	return fmt.Sprintf("%dh%02dm", h, m)
 }
 
-func hasModels(rpt *report.Report) bool {
-	for _, row := range rpt.Rows {
-		if row.Model != "" {
-			return true
-		}
-	}
-	return false
-}
-
 // trimDate removes the "YYYY-" prefix from date-shaped keys.
 // Non-date keys are returned as-is.
 func trimDate(key string, weekday bool) string {
@@ -108,7 +100,7 @@ func Table(w io.Writer, rpt *report.Report, keyHeader string, exact bool, title 
 		tw.SetTitle(text.FgCyan.Sprint(title))
 	}
 
-	showModel := hasModels(rpt)
+	showModel := slices.ContainsFunc(rpt.Rows, func(r report.Row) bool { return r.Model != "" })
 
 	displayHeader := keyHeader
 

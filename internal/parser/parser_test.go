@@ -3,6 +3,7 @@ package parser
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -82,12 +83,18 @@ func TestFilterProject(t *testing.T) {
 `
 	dir := setupTestDir(t, data)
 
-	records, _, _, _ := parseDir(dir, Options{Project: "myapp"})
+	records, _, _, err := parseDir(dir, Options{Project: "myapp"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(records) != 1 {
 		t.Errorf("expected 1 record matching 'myapp', got %d", len(records))
 	}
 
-	records, _, _, _ = parseDir(dir, Options{Project: "other"})
+	records, _, _, err = parseDir(dir, Options{Project: "other"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(records) != 0 {
 		t.Errorf("expected 0 records for 'other', got %d", len(records))
 	}
@@ -160,13 +167,7 @@ func TestSubagentFiles(t *testing.T) {
 	}
 
 	// Check that subagent haiku was found
-	hasHaiku := false
-	for _, r := range records {
-		if r.Model == "claude-haiku-4-5" {
-			hasHaiku = true
-		}
-	}
-	if !hasHaiku {
+	if !slices.ContainsFunc(records, func(r Record) bool { return r.Model == "claude-haiku-4-5" }) {
 		t.Error("expected subagent with haiku model to be parsed")
 	}
 

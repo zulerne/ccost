@@ -2,11 +2,14 @@ package parser
 
 import (
 	"bufio"
+	"cmp"
 	"encoding/json"
+	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -67,7 +70,7 @@ type Options struct {
 func claudeDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("getting home directory: %w", err)
 	}
 	return filepath.Join(home, ".claude", "projects"), nil
 }
@@ -76,7 +79,7 @@ func claudeDir() (string, error) {
 func Parse(opts Options) ([]Record, []Session, []string, error) {
 	dir, err := claudeDir()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf("finding claude directory: %w", err)
 	}
 	return parseDir(dir, opts)
 }
@@ -102,7 +105,7 @@ func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
 
 	mainFiles, err := filepath.Glob(mainPattern)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf("globbing session files: %w", err)
 	}
 	// Pattern is hardcoded; filepath.Glob only errors on malformed patterns.
 	subFiles, _ := filepath.Glob(subPattern)
@@ -185,21 +188,21 @@ func parseDir(dir string, opts Options) ([]Record, []Session, []string, error) {
 		}
 	}
 
-	sort.Slice(allRecords, func(i, j int) bool {
-		return allRecords[i].Time.Before(allRecords[j].Time)
+	slices.SortFunc(allRecords, func(a, b Record) int {
+		return a.Time.Compare(b.Time)
 	})
 
-	sort.Slice(allSessions, func(i, j int) bool {
-		return allSessions[i].Date < allSessions[j].Date
+	slices.SortFunc(allSessions, func(a, b Session) int {
+		return cmp.Compare(a.Date, b.Date)
 	})
 
-	sort.Strings(fileErrors)
+	slices.Sort(fileErrors)
 	var warnings []string
 	warnings = append(warnings, fileErrors...)
 	for m := range unknownModels {
 		warnings = append(warnings, "unknown model: "+m)
 	}
-	sort.Strings(warnings[len(fileErrors):])
+	slices.Sort(warnings[len(fileErrors):])
 
 	return allRecords, allSessions, warnings, nil
 }
@@ -223,7 +226,7 @@ type dayBounds struct {
 func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []string, string, error) { //nolint:gocritic // unnamedResult: 5 returns is intentional for this internal function
 	f, err := os.Open(path) //nolint:gosec // G304: path comes from trusted local log directory
 	if err != nil {
-		return nil, nil, nil, "", err
+		return nil, nil, nil, "", fmt.Errorf("opening log file: %w", err)
 	}
 	defer func() { _ = f.Close() }()
 
@@ -277,7 +280,7 @@ func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []s
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, nil, nil, "", err
+		return nil, nil, nil, "", fmt.Errorf("reading %s: %w", path, err)
 	}
 
 	var records []Record
@@ -336,10 +339,7 @@ func parseFile(path string, opts Options, isMain bool) ([]Record, []Session, []s
 		}
 	}
 
-	var warnings []string
-	for m := range unknownModels {
-		warnings = append(warnings, m)
-	}
+	warnings := slices.Collect(maps.Keys(unknownModels))
 
 	return records, sessions, warnings, fullCWD, nil
 }
@@ -359,10 +359,7 @@ func disambiguateProjects(cwdsByBase map[string]map[string]bool) map[string]stri
 		}
 
 		// Collision: progressively add parent components until unique.
-		cwdList := make([]string, 0, len(cwds))
-		for cwd := range cwds {
-			cwdList = append(cwdList, cwd)
-		}
+		cwdList := slices.Collect(maps.Keys(cwds))
 
 		for depth := 2; depth <= 20; depth++ {
 			names := make(map[string][]string) // candidate name → CWDs

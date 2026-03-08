@@ -19,6 +19,9 @@ linters:
     - gocritic
     - prealloc
     - unconvert
+    # Error handling
+    - wrapcheck
+    - errorlint
   settings:
     govet:
       enable:
@@ -43,3 +46,4 @@ linters:
           - goconst
           - gosec
           - gocritic
+          - wrapcheck

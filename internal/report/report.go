@@ -1,7 +1,8 @@
 package report
 
 import (
-	"sort"
+	"cmp"
+	"slices"
 	"time"
 
 	"github.com/zulerne/ccost/internal/parser"
@@ -112,11 +113,11 @@ func aggregate(
 		durations[sessionKeyFn(s)] += s.Duration
 	}
 
-	sort.Slice(keys, func(i, j int) bool {
-		if keys[i].key != keys[j].key {
-			return keys[i].key < keys[j].key
+	slices.SortFunc(keys, func(a, b groupKey) int {
+		if c := cmp.Compare(a.key, b.key); c != 0 {
+			return c
 		}
-		return keys[i].model < keys[j].model
+		return cmp.Compare(a.model, b.model)
 	})
 
 	var total Row

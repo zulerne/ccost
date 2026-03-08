@@ -2,6 +2,7 @@ package display
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"math"
 
@@ -61,5 +62,8 @@ func JSON(w io.Writer, rpt *report.Report) error {
 
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	return enc.Encode(jr)
+	if err := enc.Encode(jr); err != nil {
+		return fmt.Errorf("encoding report: %w", err)
+	}
+	return nil
 }

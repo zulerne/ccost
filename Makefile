@@ -1,4 +1,4 @@
-.PHONY: build test lint fmt run clean coverage
+.PHONY: build test lint check fmt run clean coverage
 
 VERSION ?= $(shell git describe --tags --always --dirty)
 
@@ -9,7 +9,9 @@ test:
 	go test ./...
 
 lint:
-	golangci-lint run ./...
+	golangci-lint run
+
+check: lint test
 
 fmt:
 	go fmt ./...
