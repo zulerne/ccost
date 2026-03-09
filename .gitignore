@@ -1,7 +1,8 @@
 /ccost
 dist/
-demo.tape
+*.tape
 record-demo.sh
 .idea/
 .DS_Store
 coverage.out
+social-preview.png

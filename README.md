@@ -15,7 +15,11 @@ A CLI tool to analyze [Claude Code](https://claude.com/claude-code) token usage,
 
 Reads local JSONL session logs. No network access. Alternative to [ccusage](https://github.com/ryoppippi/ccusage).
 
-![demo](demo.gif)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="demo-dark.gif">
+  <source media="(prefers-color-scheme: light)" srcset="demo-light.gif">
+  <img alt="Demo" src="demo-light.gif">
+</picture>
 
 ## Installation
 
