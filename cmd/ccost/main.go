@@ -49,7 +49,13 @@ func main() {
 	if weeklyMode {
 		now := time.Now()
 		sevenDaysAgo := now.AddDate(0, 0, -6)
-		opts.Since = time.Date(sevenDaysAgo.Year(), sevenDaysAgo.Month(), sevenDaysAgo.Day(), 0, 0, 0, 0, now.Location())
+		opts.Since = time.Date(
+			sevenDaysAgo.Year(),
+			sevenDaysAgo.Month(),
+			sevenDaysAgo.Day(),
+			0, 0, 0, 0,
+			now.Location(),
+		)
 	}
 
 	if sinceStr != "" {
