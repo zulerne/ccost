@@ -13,10 +13,15 @@ type ModelPricing struct {
 // Source: https://platform.claude.com/docs/en/about-claude/pricing
 // Claude Code uses 1-hour ephemeral cache: write = 2x input, read = 0.1x input
 var models = map[string]ModelPricing{
+	"claude-fable-5":    {Input: 10.0, Output: 50.0, CacheWrite: 20.0, CacheRead: 1.0},
+	"claude-mythos-5":   {Input: 10.0, Output: 50.0, CacheWrite: 20.0, CacheRead: 1.0},
+	"claude-opus-4-8":   {Input: 5.0, Output: 25.0, CacheWrite: 10.0, CacheRead: 0.50},
+	"claude-opus-4-7":   {Input: 5.0, Output: 25.0, CacheWrite: 10.0, CacheRead: 0.50},
 	"claude-opus-4-6":   {Input: 5.0, Output: 25.0, CacheWrite: 10.0, CacheRead: 0.50},
 	"claude-opus-4-5":   {Input: 5.0, Output: 25.0, CacheWrite: 10.0, CacheRead: 0.50},
 	"claude-opus-4-1":   {Input: 15.0, Output: 75.0, CacheWrite: 30.0, CacheRead: 1.50},
 	"claude-opus-4":     {Input: 15.0, Output: 75.0, CacheWrite: 30.0, CacheRead: 1.50},
+	"claude-sonnet-5":   {Input: 3.0, Output: 15.0, CacheWrite: 6.0, CacheRead: 0.30},
 	"claude-sonnet-4-6": {Input: 3.0, Output: 15.0, CacheWrite: 6.0, CacheRead: 0.30},
 	"claude-sonnet-4-5": {Input: 3.0, Output: 15.0, CacheWrite: 6.0, CacheRead: 0.30},
 	"claude-sonnet-4":   {Input: 3.0, Output: 15.0, CacheWrite: 6.0, CacheRead: 0.30},
